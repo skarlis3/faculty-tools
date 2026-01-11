@@ -11,7 +11,7 @@ from collections import defaultdict
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Faculty Toolkit", page_icon="🎓", layout="wide")
 
-st.title("🎓 Faculty")
+st.title("🎓 Faculty Tools")
 st.markdown("One-stop shop for Syllabus Schedules and Door Signs.")
 
 # --- SIDEBAR NAVIGATION ---
