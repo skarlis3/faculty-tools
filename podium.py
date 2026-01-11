@@ -125,7 +125,7 @@ if st.session_state.mode == 'setup':
     with col1:
         selected_class = st.selectbox("Select Class", list(CLASS_CALENDARS.keys()))
         cal_url = CLASS_CALENDARS[selected_class]
-        agenda_text = st.text_area("Today's Agenda", height=150, value="Quick Write\nDiscuss Reading\nGroup Work\nBreak")
+        agenda_text = st.text_area("Today's Agenda", height=150, value="Freewrite\nTopic\nTopic")
     with col2:
         st.subheader("Tech-Free Writing")
         is_tfw = st.checkbox("Is today a TFW day?", value=True)
