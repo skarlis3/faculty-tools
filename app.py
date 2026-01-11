@@ -6,9 +6,9 @@ import random
 from io import StringIO
 
 # --- PAGE SETUP ---
-st.set_page_config(page_title="Professor Toolkit", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="Faculty Toolkit", page_icon="💻", layout="wide")
 
-st.title("🎓 Professor's Classroom Toolkit")
+st.title("🎓 Faculty Toolkit")
 st.markdown("Tools to automate your syllabus, door signs, and calendar dates.")
 
 # --- SIDEBAR NAVIGATION ---
