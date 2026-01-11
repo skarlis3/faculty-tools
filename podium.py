@@ -60,7 +60,7 @@ if st.session_state.mode == 'setup':
         cal_url = CLASS_CALENDARS[selected_class]
         
         agenda_text = st.text_area("Today's Agenda:", height=150, 
-                                   value="• Quick Write\n• Discuss Reading\n• Group Work\n• Break")
+                                   value="• TFW Freewrite\n• Topic\n• Topic")
     
     with col2:
         st.subheader("Tech-Free Writing")
@@ -69,7 +69,7 @@ if st.session_state.mode == 'setup':
         if is_tfw:
             tfw_prompt = st.text_area("Prompt (Saved for later):", height=100, 
                                       value="What is a memory you have that feels like a ghost?")
-            tfw_minutes = st.number_input("Duration (minutes):", value=10, min_value=1)
+            tfw_minutes = st.number_input("Duration (minutes):", value=7, min_value=1)
         else:
             tfw_prompt = ""
             tfw_minutes = 0
@@ -166,7 +166,7 @@ elif st.session_state.mode == 'focus':
     <div class='focus-rules'>
         • Put all technology away.<br>
         • Keep your pen moving the entire time.<br>
-        • If you get stuck, write "I am stuck" until a new thought comes.
+        • If you get stuck, write "I am not sure what else to write" or something similar until a new thought comes.
     </div>
     """, unsafe_allow_html=True)
 
