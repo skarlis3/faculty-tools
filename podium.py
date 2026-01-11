@@ -18,7 +18,7 @@ CLASS_CALENDARS = {
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Classroom Podium", page_icon="💻", layout="wide")
 
-# --- ELECTRIC AERO CSS ---
+# --- CSS STYLING ---
 st.markdown("""
 <style>
     /* Global Background & Font */
@@ -92,24 +92,23 @@ st.markdown("""
         border-radius: 0 8px 8px 0;
     }
     
-    /* BUTTONS: PURE OUTLINE (GHOST) */
+    /* BUTTONS: ULTRA THIN OUTLINE (GHOST) */
     div.stButton > button {
         background: transparent !important;
-        color: #38bdf8 !important; /* Electric Blue Text */
-        border: 1px solid rgba(56, 189, 248, 0.5) !important; /* Thin Blue Border */
+        color: rgba(56, 189, 248, 0.7) !important; /* Muted Blue Text */
+        border: 1px solid rgba(56, 189, 248, 0.3) !important; /* Very Thin Border */
         border-radius: 4px;
-        padding: 8px 20px;
-        font-weight: 400;
+        padding: 6px 15px;
+        font-weight: 300;
         letter-spacing: 1px;
         text-transform: uppercase;
-        font-size: 0.85em;
+        font-size: 0.8em;
         transition: all 0.3s ease;
     }
     div.stButton > button:hover {
         border-color: #38bdf8 !important;
-        box-shadow: 0 0 15px rgba(56, 189, 248, 0.3) !important;
-        text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
-        transform: translateY(-1px);
+        color: #ffffff !important;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.2) !important;
     }
     
     /* PROGRESS BAR */
@@ -119,7 +118,7 @@ st.markdown("""
 
     /* --- FOCUS MODE STYLES --- */
     .focus-prompt { 
-        font-size: 2.5em; 
+        font-size: 2.2em; 
         color: #ffffff; 
         text-align: center; 
         margin-bottom: 40px; 
@@ -166,8 +165,11 @@ def get_fuzzy_time(seconds_left):
     elif 0 < minutes < 0.75: return "Less than a minute remaining"
     else: return "Time is up"
 
+# Session State Init
 if 'mode' not in st.session_state:
     st.session_state.mode = 'setup' 
+if 'start_time' not in st.session_state:
+    st.session_state.start_time = None
 
 # --- 1. SETUP SCREEN ---
 if st.session_state.mode == 'setup':
@@ -223,6 +225,7 @@ elif st.session_state.mode == 'welcome':
             st.write("")
             if st.button("Start Writing Session"):
                 st.session_state.mode = 'focus'
+                st.session_state.start_time = time.time() # Start clock
                 st.rerun()
 
         st.markdown("<br><br><br><br>", unsafe_allow_html=True)
@@ -281,7 +284,16 @@ elif st.session_state.mode == 'focus':
     with c2: 
         if st.button("Exit"):
             st.session_state.mode = 'welcome'
+            st.session_state.start_time = None
             st.rerun()
+
+    # Calculate Timing
+    if st.session_state.start_time is None:
+        st.session_state.start_time = time.time()
+        
+    elapsed = time.time() - st.session_state.start_time
+    total_sec = st.session_state.tfw_minutes * 60
+    remaining = max(0, total_sec - elapsed)
 
     # Spacer
     st.write("") 
@@ -308,29 +320,25 @@ elif st.session_state.mode == 'focus':
 
     # RIGHT: Timer
     with col_timer:
-        timer_placeholder = st.empty()
+        fuzzy_text = get_fuzzy_time(remaining)
         
-        # NOTE: We use a small delay here to ensure the UI fully renders 
-        # BEFORE the loop starts. This fixes the "dimmed previous page" glitch.
-        time.sleep(0.5)
+        color = "#7dd3fc"
+        if remaining < 60: color = "#facc15"
+        
+        st.markdown(f"""
+        <div class='glass-card card-content' style='text-align:center;'>
+            <div class='focus-timer-text' style='color:{color}'>{fuzzy_text}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Progress Bar
+        st.progress((total_sec - remaining) / total_sec)
 
-        total_sec = st.session_state.tfw_minutes * 60
-        progress_bar = st.progress(0)
-        
-        for i in range(total_sec, -1, -1):
-            fuzzy_text = get_fuzzy_time(i)
-            
-            color = "#7dd3fc"
-            if i < 60: color = "#facc15"
-            
-            # Using card-content class to match height
-            timer_placeholder.markdown(f"""
-            <div class='glass-card card-content' style='text-align:center;'>
-                <div class='focus-timer-text' style='color:{color}'>{fuzzy_text}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            progress_bar.progress((total_sec - i) / total_sec)
-            time.sleep(1)
-            
+    # The Refresh Trick:
+    # Instead of a 'while' loop that blocks the UI, we sleep for 1 second 
+    # and then trigger a single rerun. This lets Streamlit clear the previous page completely.
+    if remaining > 0:
+        time.sleep(1)
+        st.rerun()
+    else:
         st.balloons()
