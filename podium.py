@@ -18,13 +18,13 @@ CLASS_CALENDARS = {
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Classroom Podium", page_icon="💻", layout="wide")
 
-# --- AERO / GLASS CSS ---
+# --- ELECTRIC AERO CSS ---
 st.markdown("""
 <style>
     /* Global Background & Font */
     .stApp {
-        background-color: #0d1117; /* Very Dark Blue/Grey */
-        background-image: radial-gradient(circle at 50% 0%, #1f2937 0%, #0d1117 70%);
+        background-color: #050a10; 
+        background-image: radial-gradient(circle at 0% 0%, #111a2e 0%, #050a10 60%);
     }
     
     html, body, [class*="css"] {
@@ -33,94 +33,95 @@ st.markdown("""
         color: #e6edf3;
     }
     
-    /* GLASSMOPRHISM CARD (Aero Style) */
+    /* GLASS CARDS */
     .glass-card { 
-        background: rgba(255, 255, 255, 0.05); /* Very transparent */
-        backdrop-filter: blur(12px); /* frosted glass effect */
+        background: rgba(13, 17, 23, 0.6); 
+        backdrop-filter: blur(12px); 
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle white border */
+        border: 1px solid rgba(56, 189, 248, 0.15); /* Subtle Electric Border */
         border-radius: 12px; 
         padding: 25px; 
         margin-bottom: 20px; 
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
     }
     
     /* HEADERS */
     .dashboard-title { 
-        font-size: 4em; 
+        font-size: 5em; 
         font-weight: 200; 
         color: #ffffff; 
+        margin-top: -20px;
         margin-bottom: 0px; 
-        letter-spacing: 2px;
-        text-shadow: 0 0 20px rgba(255,255,255,0.1);
+        letter-spacing: -1px;
+        text-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
     }
     
-    /* Date Highlight - Make it Pop */
+    /* Date Highlight - Electric Blue */
     .dashboard-subtitle { 
-        font-size: 1.8em; 
-        color: #7dd3fc; /* Bright Sky Blue */
-        margin-bottom: 40px; 
-        font-weight: 400;
-        text-transform: uppercase;
+        font-size: 2em; 
+        color: #38bdf8; /* Electric Sky */
+        margin-bottom: 50px; 
+        font-weight: 500;
         letter-spacing: 1px;
     }
     
     .card-header {
         font-size: 1.1em;
-        color: #a5d6ff; /* Soft Blue */
+        color: #38bdf8; /* Electric Sky */
         margin-bottom: 15px;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        letter-spacing: 2px;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.2);
         padding-bottom: 8px;
     }
     
     .card-list {
         font-size: 1.3em;
         line-height: 1.6;
-        color: #c9d1d9;
+        color: #e6edf3;
         list-style-position: inside;
         padding-left: 5px;
     }
     
-    /* TFW Notice Box */
+    /* TFW Notice Box - Deeper aesthetic */
     .tfw-notice { 
-        background: linear-gradient(90deg, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.02) 100%);
-        border-left: 4px solid #38bdf8; 
+        background: linear-gradient(90deg, rgba(3, 105, 161, 0.2) 0%, rgba(3, 105, 161, 0.05) 100%);
+        border-left: 4px solid #0284c7; 
         color: #e0f2fe; 
         padding: 20px; 
-        margin-top: 20px; 
+        margin-top: 10px; 
         border-radius: 0 8px 8px 0;
     }
-
-    /* CUSTOM BUTTON STYLING (Teal/Blue Gradient, No Red) */
+    
+    /* BUTTONS: Deep Electric Gradient */
+    /* Target the primary action buttons */
     div.stButton > button {
-        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: white;
-        border: none;
-        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
         padding: 10px 20px;
-        font-weight: 500;
+        font-weight: 400;
+        letter-spacing: 0.5px;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
     }
     div.stButton > button:hover {
-        background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
-        border-color: transparent;
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
     }
 
-    /* PROGRESS BAR COLOR OVERRIDE */
+    /* SUBTLE EDIT BUTTON (Targeting via key or hierarchy if possible, 
+       but for reliability we apply a generic override for secondary buttons 
+       or use specific logic below) */
+    
+    /* PROGRESS BAR */
     .stProgress > div > div > div > div {
-        background-color: #38bdf8; /* Sky Blue bar */
+        background-color: #0ea5e9; 
     }
 
     /* --- FOCUS MODE --- */
-    /* Vertical Center Wrapper */
-    .focus-container {
-        margin-top: 15vh; /* Pushes content down significantly */
-    }
+    .focus-container { margin-top: 15vh; }
 
     .focus-prompt { 
         font-size: 2.2em; 
@@ -129,21 +130,18 @@ st.markdown("""
         margin-bottom: 50px; 
         font-weight: 300; 
         line-height: 1.4;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
     
-    /* Reminder List - Lighter Text */
     .rules-list {
         font-size: 1.3em; 
-        color: #94a3b8; /* Slate-400 (Lighter Grey/Blue) */
+        color: #cbd5e1; 
         line-height: 2.0; 
         text-align: left;
     }
     
-    /* Timer Text - Smaller & Softer */
     .focus-timer-text { 
-        font-size: 2em; /* Smaller than before */
-        color: #7dd3fc; /* Soft Blue */
+        font-size: 2em; 
+        color: #7dd3fc; 
         text-align: center; 
         font-weight: 300; 
         margin-bottom: 10px;
@@ -191,7 +189,6 @@ if st.session_state.mode == 'setup':
             tfw_minutes = 0
 
     st.write("")
-    # Primary button style handled by CSS injection above
     if st.button("Launch Welcome Screen", type="primary", use_container_width=True):
         st.session_state.cal_url = cal_url
         st.session_state.agenda = agenda_text
@@ -203,28 +200,16 @@ if st.session_state.mode == 'setup':
 
 # --- 2. WELCOME SCREEN ---
 elif st.session_state.mode == 'welcome':
-    c1, c2 = st.columns([8, 2])
-    with c1:
-        st.markdown(f"<div class='dashboard-title'>Welcome to Class</div>", unsafe_allow_html=True)
-        # Lighter, popping date
-        st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %B %d')}</div>", unsafe_allow_html=True)
-    with c2:
-        if st.button("Edit Setup"):
-            st.session_state.mode = 'setup'
-            st.rerun()
+    
+    # 2 Column Grid: Left (Title/TFW), Right (Agenda/Upcoming)
+    left_col, right_col = st.columns([1.5, 1], gap="large")
 
-    left_col, right_col = st.columns([1, 1], gap="large")
-
-    # LEFT: Agenda
+    # --- LEFT COLUMN ---
     with left_col:
-        agenda_items = "".join([f"<li>{line.strip()}</li>" for line in st.session_state.agenda.split('\n') if line.strip()])
-        st.markdown(f"""
-        <div class='glass-card'>
-            <div class='card-header'>Today's Agenda</div>
-            <ul class='card-list'>{agenda_items}</ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"<div class='dashboard-title'>Welcome to Class</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %B %d')}</div>", unsafe_allow_html=True)
         
+        # TFW Notice immediately below date
         if st.session_state.is_tfw:
             st.markdown("""
             <div class='tfw-notice'>
@@ -234,13 +219,34 @@ elif st.session_state.mode == 'welcome':
             """, unsafe_allow_html=True)
             
             st.write("")
-            if st.button("Start Writing Session", type="primary", use_container_width=True):
+            st.write("")
+            # Primary Action Button
+            if st.button("Start Writing Session ➡️", type="primary"):
                 st.session_state.mode = 'focus'
                 st.rerun()
 
-    # RIGHT: Calendar
+        # Spacer to push Edit button down
+        st.markdown("<br><br><br><br>", unsafe_allow_html=True)
+        
+        # Subtle Edit Button
+        # We wrap it in a container to isolate styling if needed
+        if st.button("⚙️ Edit Setup"):
+            st.session_state.mode = 'setup'
+            st.rerun()
+
+    # --- RIGHT COLUMN ---
     with right_col:
-        today_evs, upcoming_evs = [], []
+        # 1. AGENDA
+        agenda_items = "".join([f"<li>{line.strip()}</li>" for line in st.session_state.agenda.split('\n') if line.strip()])
+        st.markdown(f"""
+        <div class='glass-card'>
+            <div class='card-header'>Today's Agenda</div>
+            <ul class='card-list'>{agenda_items}</ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # 2. UPCOMING (GCal)
+        upcoming_evs = []
         if st.session_state.cal_url:
             try:
                 r = requests.get(st.session_state.cal_url)
@@ -251,33 +257,26 @@ elif st.session_state.mode == 'welcome':
                     
                     for e in sorted_events:
                         edate = e.begin.date()
-                        if edate == now:
-                            today_evs.append(e.name)
-                        elif now < edate <= (now + timedelta(days=7)):
-                            upcoming_evs.append(f"{e.name} ({edate.strftime('%a')})")
+                        # Show today AND next 7 days in "Upcoming" list
+                        if now <= edate <= (now + timedelta(days=7)):
+                            day_label = "Today" if edate == now else edate.strftime('%a')
+                            upcoming_evs.append(f"{e.name} <span style='color:#64748b; font-size:0.8em'>({day_label})</span>")
             except: pass
-
-        if today_evs:
-            today_html = "".join([f"<li>{x}</li>" for x in today_evs])
-            st.markdown(f"""
-            <div class='glass-card'>
-                <div class='card-header'>Today's Plan</div>
-                <ul class='card-list'>{today_html}</ul>
-            </div>""", unsafe_allow_html=True)
         
         if upcoming_evs:
             up_html = "".join([f"<li>{x}</li>" for x in upcoming_evs])
             st.markdown(f"""
             <div class='glass-card'>
-                <div class='card-header'>Due Next Week</div>
+                <div class='card-header'>Upcoming</div>
                 <ul class='card-list'>{up_html}</ul>
             </div>""", unsafe_allow_html=True)
         else:
             st.markdown(f"""
             <div class='glass-card'>
-                <div class='card-header'>Due Next Week</div>
-                <div style='color:#6c757d; font-style:italic;'>No upcoming deadlines found.</div>
+                <div class='card-header'>Upcoming</div>
+                <div style='color:#94a3b8; font-style:italic;'>No upcoming deadlines found.</div>
             </div>""", unsafe_allow_html=True)
+
 
 # --- 3. FOCUS MODE ---
 elif st.session_state.mode == 'focus':
@@ -289,7 +288,7 @@ elif st.session_state.mode == 'focus':
             st.session_state.mode = 'welcome'
             st.rerun()
 
-    # Vertical Spacer to center content
+    # Vertical Spacer
     st.markdown("<div class='focus-container'></div>", unsafe_allow_html=True)
 
     # Prompt
@@ -322,9 +321,9 @@ elif st.session_state.mode == 'focus':
         for i in range(total_sec, -1, -1):
             fuzzy_text = get_fuzzy_time(i)
             
-            # Subtle color shift for text only
-            color = "#bae6fd" # Very light blue
-            if i < 60: color = "#fde047" # Soft yellow
+            # Subtle color shift
+            color = "#7dd3fc" # Electric blue
+            if i < 60: color = "#facc15" # Deep Yellow
             
             # Timer Display
             timer_placeholder.markdown(f"""
