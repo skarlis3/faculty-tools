@@ -92,21 +92,24 @@ st.markdown("""
         border-radius: 0 8px 8px 0;
     }
     
-    /* SUBTLE GHOST BUTTONS */
+    /* BUTTONS: PURE OUTLINE (GHOST) */
     div.stButton > button {
         background: transparent !important;
-        color: rgba(255, 255, 255, 0.5) !important; /* Muted text */
-        border: 1px solid rgba(56, 189, 248, 0.3) !important; /* Very thin, subtle blue border */
-        border-radius: 6px;
-        padding: 8px 15px;
+        color: #38bdf8 !important; /* Electric Blue Text */
+        border: 1px solid rgba(56, 189, 248, 0.5) !important; /* Thin Blue Border */
+        border-radius: 4px;
+        padding: 8px 20px;
         font-weight: 400;
-        font-size: 0.9em;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 0.85em;
         transition: all 0.3s ease;
     }
     div.stButton > button:hover {
-        border-color: #38bdf8 !important; /* Brighter on hover */
-        color: #ffffff !important;
-        box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.3) !important;
+        text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+        transform: translateY(-1px);
     }
     
     /* PROGRESS BAR */
@@ -141,7 +144,7 @@ st.markdown("""
     
     /* Helper to center content in columns */
     .card-content {
-        height: 300px; /* Fixed height for alignment */
+        height: 300px; 
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -165,8 +168,6 @@ def get_fuzzy_time(seconds_left):
 
 if 'mode' not in st.session_state:
     st.session_state.mode = 'setup' 
-if 'start_time' not in st.session_state:
-    st.session_state.start_time = None
 
 # --- 1. SETUP SCREEN ---
 if st.session_state.mode == 'setup':
@@ -222,7 +223,6 @@ elif st.session_state.mode == 'welcome':
             st.write("")
             if st.button("Start Writing Session"):
                 st.session_state.mode = 'focus'
-                st.session_state.start_time = time.time() # Capture start time
                 st.rerun()
 
         st.markdown("<br><br><br><br>", unsafe_allow_html=True)
@@ -281,18 +281,7 @@ elif st.session_state.mode == 'focus':
     with c2: 
         if st.button("Exit"):
             st.session_state.mode = 'welcome'
-            st.session_state.start_time = None
             st.rerun()
-
-    # Calculate Time
-    elapsed = time.time() - st.session_state.start_time
-    total_sec = st.session_state.tfw_minutes * 60
-    remaining = max(0, total_sec - elapsed)
-    
-    # Refresh Logic
-    if remaining > 0:
-        time.sleep(1) # Refresh every second without blocking UI completely
-        st.rerun()
 
     # Spacer
     st.write("") 
@@ -319,20 +308,29 @@ elif st.session_state.mode == 'focus':
 
     # RIGHT: Timer
     with col_timer:
-        fuzzy_text = get_fuzzy_time(remaining)
+        timer_placeholder = st.empty()
         
-        color = "#7dd3fc"
-        if remaining < 60: color = "#facc15"
-        
-        # Display
-        st.markdown(f"""
-        <div class='glass-card card-content' style='text-align:center;'>
-            <div class='focus-timer-text' style='color:{color}'>{fuzzy_text}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Progress Bar
-        st.progress((total_sec - remaining) / total_sec)
+        # NOTE: We use a small delay here to ensure the UI fully renders 
+        # BEFORE the loop starts. This fixes the "dimmed previous page" glitch.
+        time.sleep(0.5)
 
-    if remaining == 0:
+        total_sec = st.session_state.tfw_minutes * 60
+        progress_bar = st.progress(0)
+        
+        for i in range(total_sec, -1, -1):
+            fuzzy_text = get_fuzzy_time(i)
+            
+            color = "#7dd3fc"
+            if i < 60: color = "#facc15"
+            
+            # Using card-content class to match height
+            timer_placeholder.markdown(f"""
+            <div class='glass-card card-content' style='text-align:center;'>
+                <div class='focus-timer-text' style='color:{color}'>{fuzzy_text}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            progress_bar.progress((total_sec - i) / total_sec)
+            time.sleep(1)
+            
         st.balloons()
