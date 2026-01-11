@@ -19,17 +19,111 @@ CLASS_CALENDARS = {
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Classroom Podium", page_icon="💻", layout="wide")
 
-# --- CUSTOM CSS ---
+# --- PROFESSIONAL CSS ---
 st.markdown("""
 <style>
-    .dashboard-title { font-size: 4em; font-weight: bold; color: #ffffff; margin-bottom: 0px; }
-    .dashboard-subtitle { font-size: 1.5em; color: #aaaaaa; margin-bottom: 30px; }
-    .agenda-box { background-color: #1E1E1E; border-left: 6px solid #00FF00; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-    .calendar-box { background-color: #1E1E1E; border-left: 6px solid #00AAFF; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-    .tfw-alert { background-color: #333300; border: 2px solid #FFD700; color: #FFD700; padding: 15px; text-align: center; font-size: 1.5em; font-weight: bold; border-radius: 10px; margin-top: 20px; }
-    .focus-prompt { font-size: 2.8em; color: #ffffff; text-align: center; margin-top: 40px; margin-bottom: 40px; font-weight: bold; }
-    .focus-timer { font-size: 3.5em; color: #88c0d0; text-align: center; font-family: 'Segoe UI', sans-serif; font-weight: 300; margin-top: 20px; }
-    .focus-rules { font-size: 1.3em; color: #888; text-align: center; line-height: 1.8; margin-top: 50px; }
+    /* Global Clean Font */
+    html, body, [class*="css"] {
+        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+        font-weight: 300; /* Lighter weight */
+    }
+    
+    /* Headers */
+    .dashboard-title { 
+        font-size: 3.5em; 
+        font-weight: 300; 
+        color: #ffffff; 
+        margin-bottom: 5px; 
+        letter-spacing: 1px;
+    }
+    .dashboard-subtitle { 
+        font-size: 1.2em; 
+        color: #b0b8c1; 
+        margin-bottom: 40px; 
+        font-weight: 300;
+    }
+    
+    /* Cards (Welcome Screen) */
+    .card-box { 
+        background-color: #212529; 
+        border-radius: 8px; 
+        padding: 25px; 
+        margin-bottom: 20px; 
+        border: 1px solid #343a40;
+    }
+    .card-header {
+        font-size: 1.1em;
+        color: #8da9c4; /* Soft slate blue */
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .card-list {
+        font-size: 1.2em;
+        line-height: 1.8;
+        color: #e9ecef;
+        list-style-position: inside;
+        padding-left: 10px;
+    }
+    
+    /* TFW Alert Box (Welcome Screen) */
+    .tfw-notice { 
+        background-color: #2b3035; 
+        border-left: 4px solid #adb5bd; 
+        color: #dee2e6; 
+        padding: 20px; 
+        margin-top: 20px; 
+        border-radius: 4px;
+    }
+    .tfw-notice strong {
+        color: #ffffff;
+        font-weight: 500;
+        display: block;
+        margin-bottom: 5px;
+        font-size: 1.1em;
+    }
+
+    /* Focus Mode Styling */
+    .focus-prompt { 
+        font-size: 2.2em; 
+        color: #ffffff; 
+        text-align: center; 
+        margin-top: 40px; 
+        margin-bottom: 60px; 
+        font-weight: 300; /* Not bold */
+        line-height: 1.3;
+    }
+    
+    /* Focus Cards Container */
+    .focus-card {
+        background-color: #1a1d20;
+        padding: 30px;
+        border-radius: 8px;
+        border: 1px solid #343a40;
+        height: 100%;
+    }
+    
+    .rules-list {
+        font-size: 1.3em; 
+        color: #e9ecef; /* High contrast white-ish */
+        line-height: 2.0; 
+        text-align: left;
+    }
+    .rules-list li {
+        margin-bottom: 10px;
+    }
+
+    .focus-timer-text { 
+        font-size: 2.5em; 
+        color: #a8dadc; /* Soft pastel cyan */
+        text-align: center; 
+        font-weight: 300; 
+        margin-bottom: 20px;
+    }
+    
+    /* Remove default streamlit margins */
+    .block-container { padding-top: 2rem; }
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -51,31 +145,28 @@ if 'mode' not in st.session_state:
 
 # --- 1. SETUP SCREEN ---
 if st.session_state.mode == 'setup':
-    st.header("🛠️ Classroom Setup")
+    st.markdown("## Classroom Setup")
     
     col1, col2 = st.columns(2)
     with col1:
-        # Dropdown for Class Calendar
-        selected_class = st.selectbox("Select Class:", list(CLASS_CALENDARS.keys()))
+        selected_class = st.selectbox("Select Class", list(CLASS_CALENDARS.keys()))
         cal_url = CLASS_CALENDARS[selected_class]
-        
-        agenda_text = st.text_area("Today's Agenda:", height=150, 
-                                   value="• TFW Freewrite\n• Topic\n• Topic")
+        agenda_text = st.text_area("Today's Agenda", height=150, 
+                                   value="Quick Write\nDiscuss Reading\nGroup Work\nBreak")
     
     with col2:
         st.subheader("Tech-Free Writing")
         is_tfw = st.checkbox("Is today a TFW day?", value=True)
-        
         if is_tfw:
-            tfw_prompt = st.text_area("Prompt (Saved for later):", height=100, 
+            tfw_prompt = st.text_area("Writing Prompt", height=100, 
                                       value="What is a memory you have that feels like a ghost?")
-            tfw_minutes = st.number_input("Duration (minutes):", value=7, min_value=1)
+            tfw_minutes = st.number_input("Duration (minutes)", value=10, min_value=1)
         else:
             tfw_prompt = ""
             tfw_minutes = 0
 
     st.write("")
-    if st.button("🚀 Launch Welcome Screen", type="primary", use_container_width=True):
+    if st.button("Launch Welcome Screen", type="primary", use_container_width=True):
         st.session_state.cal_url = cal_url
         st.session_state.agenda = agenda_text
         st.session_state.is_tfw = is_tfw
@@ -91,7 +182,7 @@ elif st.session_state.mode == 'welcome':
         st.markdown(f"<div class='dashboard-title'>Welcome to Class</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %B %d')}</div>", unsafe_allow_html=True)
     with c2:
-        if st.button("⚙️ Edit Setup"):
+        if st.button("Edit Setup"):
             st.session_state.mode = 'setup'
             st.rerun()
 
@@ -99,20 +190,26 @@ elif st.session_state.mode == 'welcome':
 
     # LEFT: Agenda
     with left_col:
-        st.markdown("### 📝 Today's Agenda")
-        agenda_html = "".join([f"<li>{line.strip()}</li>" for line in st.session_state.agenda.split('\n') if line.strip()])
-        st.markdown(f"<div class='agenda-box'><ul style='font-size: 1.3em; line-height: 1.6;'>{agenda_html}</ul></div>", unsafe_allow_html=True)
+        # Agenda Card
+        agenda_items = "".join([f"<li>{line.strip()}</li>" for line in st.session_state.agenda.split('\n') if line.strip()])
+        st.markdown(f"""
+        <div class='card-box'>
+            <div class='card-header'>Today's Agenda</div>
+            <ul class='card-list'>{agenda_items}</ul>
+        </div>
+        """, unsafe_allow_html=True)
         
+        # TFW Notice (High contrast but professional)
         if st.session_state.is_tfw:
             st.markdown("""
-            <div class='tfw-alert'>
-                📓 TECH-FREE WRITING TODAY<br>
-                <span style='font-size:0.6em; font-weight:normal'>Please grab your TFW Journal and a pen.</span>
+            <div class='tfw-notice'>
+                <strong>Tech-Free Writing Today</strong>
+                Please prepare your journal and a pen.
             </div>
             """, unsafe_allow_html=True)
             
             st.write("")
-            if st.button("Start TFW Session ➡️", type="primary", use_container_width=True):
+            if st.button("Start Writing Session", type="primary", use_container_width=True):
                 st.session_state.mode = 'focus'
                 st.rerun()
 
@@ -133,53 +230,86 @@ elif st.session_state.mode == 'welcome':
                             today_evs.append(e.name)
                         elif now < edate <= (now + timedelta(days=7)):
                             upcoming_evs.append(f"{e.name} ({edate.strftime('%a')})")
-            except:
-                pass
+            except: pass
 
-        st.markdown("### 📅 Today's Plan")
+        # Today Card
         if today_evs:
             today_html = "".join([f"<li>{x}</li>" for x in today_evs])
-            st.markdown(f"<div class='calendar-box'><ul style='font-size: 1.2em;'>{today_html}</ul></div>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div class='calendar-box' style='color:#666'>No specific calendar events today.</div>", unsafe_allow_html=True)
-
-        st.markdown("### 🔮 Due Next Week")
+            st.markdown(f"""
+            <div class='card-box'>
+                <div class='card-header'>Today's Plan</div>
+                <ul class='card-list'>{today_html}</ul>
+            </div>""", unsafe_allow_html=True)
+        
+        # Upcoming Card
         if upcoming_evs:
             up_html = "".join([f"<li>{x}</li>" for x in upcoming_evs])
-            st.markdown(f"<div class='calendar-box' style='border-left-color: #FFA500'><ul style='font-size: 1.2em;'>{up_html}</ul></div>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class='card-box'>
+                <div class='card-header'>Due Next Week</div>
+                <ul class='card-list'>{up_html}</ul>
+            </div>""", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='calendar-box' style='color:#666; border-left-color: #FFA500'>No upcoming deadlines found.</div>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class='card-box'>
+                <div class='card-header'>Due Next Week</div>
+                <div style='color:#6c757d'>No upcoming deadlines found.</div>
+            </div>""", unsafe_allow_html=True)
 
 # --- 3. FOCUS MODE ---
 elif st.session_state.mode == 'focus':
-    c1, c2 = st.columns([9, 1])
+    # Minimal top bar
+    c1, c2 = st.columns([11, 1])
     with c1: st.write("")
     with c2: 
-        if st.button("❌ Exit"):
+        if st.button("Exit"):
             st.session_state.mode = 'welcome'
             st.rerun()
 
+    # Centered Prompt
     st.markdown(f"<div class='focus-prompt'>{st.session_state.tfw_prompt}</div>", unsafe_allow_html=True)
 
-    timer_placeholder = st.empty()
-    st.markdown("""
-    <div class='focus-rules'>
-        • Put all technology away.<br>
-        • Keep your pen moving the entire time.<br>
-        • If you get stuck, write "I am not sure what else to write" or something similar until a new thought comes.
-    </div>
-    """, unsafe_allow_html=True)
+    # Two Column Layout
+    col_rules, col_timer = st.columns([1, 1], gap="large")
 
-    total_sec = st.session_state.tfw_minutes * 60
-    progress_bar = st.progress(0)
-    
-    for i in range(total_sec, -1, -1):
-        fuzzy_text = get_fuzzy_time(i)
-        color = "#88c0d0"
-        if i < 60: color = "#ebcb8b"
+    # LEFT: Rules (Left aligned, High Contrast)
+    with col_rules:
+        st.markdown("""
+        <div class='focus-card'>
+            <div class='card-header'>Guidelines</div>
+            <ul class='rules-list'>
+                <li>Put all technology away.</li>
+                <li>Keep your pen moving the entire time.</li>
+                <li>If you get stuck, write "I am stuck" until a new thought comes.</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # RIGHT: Timer (Soft colors)
+    with col_timer:
+        timer_placeholder = st.empty()
         
-        timer_placeholder.markdown(f"<div class='focus-timer' style='color:{color}'>{fuzzy_text}</div>", unsafe_allow_html=True)
-        progress_bar.progress((total_sec - i) / total_sec)
-        time.sleep(1)
+        # Timer Logic
+        total_sec = st.session_state.tfw_minutes * 60
+        progress_bar = st.progress(0)
         
-    st.balloons()
+        # Run timer
+        for i in range(total_sec, -1, -1):
+            fuzzy_text = get_fuzzy_time(i)
+            
+            # Text color (Soft Blue -> Soft Orange)
+            color = "#a8dadc" 
+            if i < 60: color = "#f4a261"
+            
+            # Dynamic HTML for timer
+            timer_placeholder.markdown(f"""
+            <div class='focus-card' style='display:flex; flex-direction:column; justify-content:center;'>
+                <div class='focus-timer-text' style='color:{color}'>{fuzzy_text}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Update bar (using streamlit's native blue, or we could style it)
+            progress_bar.progress((total_sec - i) / total_sec)
+            time.sleep(1)
+            
+        st.balloons()
