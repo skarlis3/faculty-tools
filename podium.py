@@ -190,7 +190,6 @@ elif st.session_state.mode == 'welcome':
 
 # --- 3. FOCUS MODE (JAVASCRIPT VERSION) ---
 elif st.session_state.mode == 'focus':
-    # Top Exit Button
     c1, c2 = st.columns([11, 1])
     with c1: st.write("")
     with c2: 
@@ -198,9 +197,6 @@ elif st.session_state.mode == 'focus':
             st.session_state.mode = 'welcome'
             st.rerun()
 
-    # We embed the ENTIRE Focus UI (Prompt + Cards + Timer) in a single HTML block
-    # This prevents Streamlit form reloading. The JS handles the clock locally.
-    
     total_minutes = st.session_state.tfw_minutes
     prompt_text = st.session_state.tfw_prompt
     
@@ -219,7 +215,7 @@ elif st.session_state.mode == 'focus':
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: 800px; /* Force height for iframe */
+            height: 800px;
         }}
         .prompt {{
             font-size: 2.5em;
@@ -246,9 +242,11 @@ elif st.session_state.mode == 'focus':
             border-radius: 12px;
             padding: 30px;
             height: 300px;
+            /* Top Align */
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start; 
+            position: relative;
         }}
         .card-header {{
             font-size: 1.1em;
@@ -257,33 +255,40 @@ elif st.session_state.mode == 'focus':
             letter-spacing: 2px;
             border-bottom: 1px solid rgba(56, 189, 248, 0.2);
             padding-bottom: 10px;
-            margin-bottom: 20px;
             position: absolute;
             top: 25px;
             left: 30px;
             right: 30px;
         }}
         .content-box {{
-            margin-top: 40px;
+            margin-top: 60px; /* Push content down below header */
         }}
+        
+        /* Reminders Text */
         ul {{
-            font-size: 1.4em;
-            color: #cbd5e1;
-            line-height: 1.8;
+            font-size: 1.25em; /* Lighter sizing */
+            font-weight: 200; /* Thin font */
+            color: #e2e8f0;
+            line-height: 1.6;
             padding-left: 20px;
             margin: 0;
         }}
+        
+        /* Timer Text */
         #timer {{
-            font-size: 2.2em;
+            font-size: 1.2em; /* Small */
+            font-weight: 200; /* Thin */
             color: #7dd3fc;
             text-align: center;
-            font-weight: 300;
+            opacity: 0.7; /* Background focus */
+            margin-top: 80px; /* Push down to center-ish */
         }}
+        
         #progress-container {{
             width: 100%;
             background-color: rgba(56, 189, 248, 0.1);
-            height: 8px;
-            border-radius: 4px;
+            height: 4px; /* Thinner bar */
+            border-radius: 2px;
             margin-top: 20px;
             overflow: hidden;
         }}
@@ -311,6 +316,7 @@ elif st.session_state.mode == 'focus':
             </div>
             
             <div class="card">
+                <div class="card-header">Time Remaining</div>
                 <div class="content-box">
                     <div id="timer">Loading...</div>
                     <div id="progress-container">
@@ -321,42 +327,34 @@ elif st.session_state.mode == 'focus':
         </div>
 
         <script>
-            // Set Timer Duration
             const totalMinutes = {total_minutes};
             const totalSeconds = totalMinutes * 60;
             let remaining = totalSeconds;
             
             function getFuzzy(seconds) {{
                 let minutes = seconds / 60;
-                if (minutes >= 5) return "About " + Math.round(minutes) + " minutes remaining";
-                if (minutes >= 3.5) return "About four minutes remaining";
-                if (minutes >= 2.75) return "About three minutes remaining";
-                if (minutes >= 2.25) return "About two and a half minutes remaining";
-                if (minutes >= 1.75) return "About two minutes remaining";
-                if (minutes >= 1.25) return "About a minute and a half remaining";
-                if (minutes >= 0.75) return "About one minute remaining";
-                if (minutes > 0) return "Less than a minute remaining";
+                if (minutes >= 5) return "About " + Math.round(minutes) + " minutes";
+                if (minutes >= 3.5) return "About 4 minutes";
+                if (minutes >= 2.75) return "About 3 minutes";
+                if (minutes >= 2.25) return "About 2.5 minutes";
+                if (minutes >= 1.75) return "About 2 minutes";
+                if (minutes >= 1.25) return "About 1.5 minutes";
+                if (minutes >= 0.75) return "About 1 minute";
+                if (minutes > 0) return "< 1 minute";
                 return "Time is up";
             }}
 
             const timerEl = document.getElementById('timer');
             const barEl = document.getElementById('progress-bar');
             
-            // Start Loop
             const interval = setInterval(() => {{
                 remaining--;
-                
-                // Update Text
                 timerEl.innerText = getFuzzy(remaining);
                 
-                // Update Color based on urgency
                 if (remaining < 60) {{
-                    timerEl.style.color = "#facc15"; // Yellow
-                }} else {{
-                    timerEl.style.color = "#7dd3fc"; // Blue
+                    timerEl.style.color = "#facc15"; 
                 }}
 
-                // Update Bar
                 const pct = ((totalSeconds - remaining) / totalSeconds) * 100;
                 barEl.style.width = pct + "%";
 
@@ -367,12 +365,10 @@ elif st.session_state.mode == 'focus':
                 }}
             }}, 1000);
             
-            // Initial call to set immediate state
             timerEl.innerText = getFuzzy(remaining);
         </script>
     </body>
     </html>
     """
     
-    # Render the static HTML block
     components.html(focus_html, height=850, scrolling=False)
