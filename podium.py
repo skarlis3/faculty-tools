@@ -130,8 +130,8 @@ if st.session_state.mode == 'setup':
         st.subheader("Tech-Free Writing")
         is_tfw = st.checkbox("Is today a TFW day?", value=True)
         if is_tfw:
-            tfw_prompt = st.text_area("Writing Prompt", height=100, value="Open write: write about anything you want today.")
-            tfw_minutes = st.number_input("Duration (minutes)", value=10, min_value=1)
+            tfw_prompt = st.text_area("Writing Prompt", height=100, value="Write about whatever is in your head right now—stress, lunch plans, traffic, or your to-do list. ")
+            tfw_minutes = st.number_input("Duration (minutes)", value=7, min_value=1)
         else:
             tfw_prompt = ""
             tfw_minutes = 0
