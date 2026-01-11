@@ -9,9 +9,9 @@ import io
 from collections import defaultdict
 
 # --- PAGE SETUP ---
-st.set_page_config(page_title="Professor Toolkit", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="Faculty Toolkit", page_icon="🎓", layout="wide")
 
-st.title("🎓 Professor's Classroom Toolkit")
+st.title("🎓 Faculty")
 st.markdown("One-stop shop for Syllabus Schedules and Door Signs.")
 
 # --- SIDEBAR NAVIGATION ---
