@@ -5,7 +5,6 @@ import requests
 import time
 
 # --- PRIVATE CONFIGURATION ---
-# Your specific class calendars
 CLASS_CALENDARS = {
     "ENGL 1170 (Mondays)": "https://calendar.google.com/calendar/ical/96bccc53c2e45d1bd36c7075b4c7421cfcfe6789f9f451e926f18e598c42e1a4%40group.calendar.google.com/public/basic.ics",
     "ENGL 1170 (Tuesdays)": "https://calendar.google.com/calendar/ical/f3df4847b18f876bda1420bdce9d5710558f73557203b228f5775fb4768ccad6%40group.calendar.google.com/public/basic.ics",
@@ -19,111 +18,137 @@ CLASS_CALENDARS = {
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Classroom Podium", page_icon="💻", layout="wide")
 
-# --- PROFESSIONAL CSS ---
+# --- AERO / GLASS CSS ---
 st.markdown("""
 <style>
-    /* Global Clean Font */
+    /* Global Background & Font */
+    .stApp {
+        background-color: #0d1117; /* Very Dark Blue/Grey */
+        background-image: radial-gradient(circle at 50% 0%, #1f2937 0%, #0d1117 70%);
+    }
+    
     html, body, [class*="css"] {
-        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
-        font-weight: 300; /* Lighter weight */
-    }
-    
-    /* Headers */
-    .dashboard-title { 
-        font-size: 3.5em; 
-        font-weight: 300; 
-        color: #ffffff; 
-        margin-bottom: 5px; 
-        letter-spacing: 1px;
-    }
-    .dashboard-subtitle { 
-        font-size: 1.2em; 
-        color: #b0b8c1; 
-        margin-bottom: 40px; 
+        font-family: 'Segoe UI', Roboto, sans-serif;
         font-weight: 300;
+        color: #e6edf3;
     }
     
-    /* Cards (Welcome Screen) */
-    .card-box { 
-        background-color: #212529; 
-        border-radius: 8px; 
+    /* GLASSMOPRHISM CARD (Aero Style) */
+    .glass-card { 
+        background: rgba(255, 255, 255, 0.05); /* Very transparent */
+        backdrop-filter: blur(12px); /* frosted glass effect */
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle white border */
+        border-radius: 12px; 
         padding: 25px; 
         margin-bottom: 20px; 
-        border: 1px solid #343a40;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     }
-    .card-header {
-        font-size: 1.1em;
-        color: #8da9c4; /* Soft slate blue */
-        margin-bottom: 15px;
+    
+    /* HEADERS */
+    .dashboard-title { 
+        font-size: 4em; 
+        font-weight: 200; 
+        color: #ffffff; 
+        margin-bottom: 0px; 
+        letter-spacing: 2px;
+        text-shadow: 0 0 20px rgba(255,255,255,0.1);
+    }
+    
+    /* Date Highlight - Make it Pop */
+    .dashboard-subtitle { 
+        font-size: 1.8em; 
+        color: #7dd3fc; /* Bright Sky Blue */
+        margin-bottom: 40px; 
+        font-weight: 400;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-    .card-list {
-        font-size: 1.2em;
-        line-height: 1.8;
-        color: #e9ecef;
-        list-style-position: inside;
-        padding-left: 10px;
+    
+    .card-header {
+        font-size: 1.1em;
+        color: #a5d6ff; /* Soft Blue */
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 8px;
     }
     
-    /* TFW Alert Box (Welcome Screen) */
+    .card-list {
+        font-size: 1.3em;
+        line-height: 1.6;
+        color: #c9d1d9;
+        list-style-position: inside;
+        padding-left: 5px;
+    }
+    
+    /* TFW Notice Box */
     .tfw-notice { 
-        background-color: #2b3035; 
-        border-left: 4px solid #adb5bd; 
-        color: #dee2e6; 
+        background: linear-gradient(90deg, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.02) 100%);
+        border-left: 4px solid #38bdf8; 
+        color: #e0f2fe; 
         padding: 20px; 
         margin-top: 20px; 
-        border-radius: 4px;
-    }
-    .tfw-notice strong {
-        color: #ffffff;
-        font-weight: 500;
-        display: block;
-        margin-bottom: 5px;
-        font-size: 1.1em;
+        border-radius: 0 8px 8px 0;
     }
 
-    /* Focus Mode Styling */
+    /* CUSTOM BUTTON STYLING (Teal/Blue Gradient, No Red) */
+    div.stButton > button {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+    }
+    div.stButton > button:hover {
+        background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+        border-color: transparent;
+    }
+
+    /* PROGRESS BAR COLOR OVERRIDE */
+    .stProgress > div > div > div > div {
+        background-color: #38bdf8; /* Sky Blue bar */
+    }
+
+    /* --- FOCUS MODE --- */
+    /* Vertical Center Wrapper */
+    .focus-container {
+        margin-top: 15vh; /* Pushes content down significantly */
+    }
+
     .focus-prompt { 
         font-size: 2.2em; 
         color: #ffffff; 
         text-align: center; 
-        margin-top: 40px; 
-        margin-bottom: 60px; 
-        font-weight: 300; /* Not bold */
-        line-height: 1.3;
+        margin-bottom: 50px; 
+        font-weight: 300; 
+        line-height: 1.4;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
     
-    /* Focus Cards Container */
-    .focus-card {
-        background-color: #1a1d20;
-        padding: 30px;
-        border-radius: 8px;
-        border: 1px solid #343a40;
-        height: 100%;
-    }
-    
+    /* Reminder List - Lighter Text */
     .rules-list {
         font-size: 1.3em; 
-        color: #e9ecef; /* High contrast white-ish */
+        color: #94a3b8; /* Slate-400 (Lighter Grey/Blue) */
         line-height: 2.0; 
         text-align: left;
     }
-    .rules-list li {
+    
+    /* Timer Text - Smaller & Softer */
+    .focus-timer-text { 
+        font-size: 2em; /* Smaller than before */
+        color: #7dd3fc; /* Soft Blue */
+        text-align: center; 
+        font-weight: 300; 
         margin-bottom: 10px;
     }
 
-    .focus-timer-text { 
-        font-size: 2.5em; 
-        color: #a8dadc; /* Soft pastel cyan */
-        text-align: center; 
-        font-weight: 300; 
-        margin-bottom: 20px;
-    }
-    
-    /* Remove default streamlit margins */
-    .block-container { padding-top: 2rem; }
-    
 </style>
 """, unsafe_allow_html=True)
 
@@ -145,7 +170,7 @@ if 'mode' not in st.session_state:
 
 # --- 1. SETUP SCREEN ---
 if st.session_state.mode == 'setup':
-    st.markdown("## Classroom Setup")
+    st.markdown("## 🛠️ Podium Setup")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -166,6 +191,7 @@ if st.session_state.mode == 'setup':
             tfw_minutes = 0
 
     st.write("")
+    # Primary button style handled by CSS injection above
     if st.button("Launch Welcome Screen", type="primary", use_container_width=True):
         st.session_state.cal_url = cal_url
         st.session_state.agenda = agenda_text
@@ -180,26 +206,25 @@ elif st.session_state.mode == 'welcome':
     c1, c2 = st.columns([8, 2])
     with c1:
         st.markdown(f"<div class='dashboard-title'>Welcome to Class</div>", unsafe_allow_html=True)
+        # Lighter, popping date
         st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %B %d')}</div>", unsafe_allow_html=True)
     with c2:
         if st.button("Edit Setup"):
             st.session_state.mode = 'setup'
             st.rerun()
 
-    left_col, right_col = st.columns([1, 1])
+    left_col, right_col = st.columns([1, 1], gap="large")
 
     # LEFT: Agenda
     with left_col:
-        # Agenda Card
         agenda_items = "".join([f"<li>{line.strip()}</li>" for line in st.session_state.agenda.split('\n') if line.strip()])
         st.markdown(f"""
-        <div class='card-box'>
+        <div class='glass-card'>
             <div class='card-header'>Today's Agenda</div>
             <ul class='card-list'>{agenda_items}</ul>
         </div>
         """, unsafe_allow_html=True)
         
-        # TFW Notice (High contrast but professional)
         if st.session_state.is_tfw:
             st.markdown("""
             <div class='tfw-notice'>
@@ -232,33 +257,31 @@ elif st.session_state.mode == 'welcome':
                             upcoming_evs.append(f"{e.name} ({edate.strftime('%a')})")
             except: pass
 
-        # Today Card
         if today_evs:
             today_html = "".join([f"<li>{x}</li>" for x in today_evs])
             st.markdown(f"""
-            <div class='card-box'>
+            <div class='glass-card'>
                 <div class='card-header'>Today's Plan</div>
                 <ul class='card-list'>{today_html}</ul>
             </div>""", unsafe_allow_html=True)
         
-        # Upcoming Card
         if upcoming_evs:
             up_html = "".join([f"<li>{x}</li>" for x in upcoming_evs])
             st.markdown(f"""
-            <div class='card-box'>
+            <div class='glass-card'>
                 <div class='card-header'>Due Next Week</div>
                 <ul class='card-list'>{up_html}</ul>
             </div>""", unsafe_allow_html=True)
         else:
             st.markdown(f"""
-            <div class='card-box'>
+            <div class='glass-card'>
                 <div class='card-header'>Due Next Week</div>
-                <div style='color:#6c757d'>No upcoming deadlines found.</div>
+                <div style='color:#6c757d; font-style:italic;'>No upcoming deadlines found.</div>
             </div>""", unsafe_allow_html=True)
 
 # --- 3. FOCUS MODE ---
 elif st.session_state.mode == 'focus':
-    # Minimal top bar
+    # Top Right Exit
     c1, c2 = st.columns([11, 1])
     with c1: st.write("")
     with c2: 
@@ -266,17 +289,20 @@ elif st.session_state.mode == 'focus':
             st.session_state.mode = 'welcome'
             st.rerun()
 
-    # Centered Prompt
+    # Vertical Spacer to center content
+    st.markdown("<div class='focus-container'></div>", unsafe_allow_html=True)
+
+    # Prompt
     st.markdown(f"<div class='focus-prompt'>{st.session_state.tfw_prompt}</div>", unsafe_allow_html=True)
 
     # Two Column Layout
     col_rules, col_timer = st.columns([1, 1], gap="large")
 
-    # LEFT: Rules (Left aligned, High Contrast)
+    # LEFT: Reminders (Glass Card)
     with col_rules:
         st.markdown("""
-        <div class='focus-card'>
-            <div class='card-header'>Guidelines</div>
+        <div class='glass-card'>
+            <div class='card-header'>Reminders</div>
             <ul class='rules-list'>
                 <li>Put all technology away.</li>
                 <li>Keep your pen moving the entire time.</li>
@@ -285,7 +311,7 @@ elif st.session_state.mode == 'focus':
         </div>
         """, unsafe_allow_html=True)
 
-    # RIGHT: Timer (Soft colors)
+    # RIGHT: Timer (Glass Card)
     with col_timer:
         timer_placeholder = st.empty()
         
@@ -293,22 +319,20 @@ elif st.session_state.mode == 'focus':
         total_sec = st.session_state.tfw_minutes * 60
         progress_bar = st.progress(0)
         
-        # Run timer
         for i in range(total_sec, -1, -1):
             fuzzy_text = get_fuzzy_time(i)
             
-            # Text color (Soft Blue -> Soft Orange)
-            color = "#a8dadc" 
-            if i < 60: color = "#f4a261"
+            # Subtle color shift for text only
+            color = "#bae6fd" # Very light blue
+            if i < 60: color = "#fde047" # Soft yellow
             
-            # Dynamic HTML for timer
+            # Timer Display
             timer_placeholder.markdown(f"""
-            <div class='focus-card' style='display:flex; flex-direction:column; justify-content:center;'>
+            <div class='glass-card' style='display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%;'>
                 <div class='focus-timer-text' style='color:{color}'>{fuzzy_text}</div>
             </div>
             """, unsafe_allow_html=True)
             
-            # Update bar (using streamlit's native blue, or we could style it)
             progress_bar.progress((total_sec - i) / total_sec)
             time.sleep(1)
             
