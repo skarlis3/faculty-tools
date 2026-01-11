@@ -4,18 +4,16 @@ from datetime import datetime, timedelta
 import re
 import random
 from io import StringIO
-import zipfile
-import io
-from collections import defaultdict
 
 # --- PAGE SETUP ---
-st.set_page_config(page_title="Faculty Toolkit", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="Professor Toolkit", page_icon="🎓", layout="wide")
 
-st.title("🎓 Faculty Tools")
-st.markdown("One-stop shop for Syllabus Schedules and Door Signs.")
+st.title("🎓 Professor's Classroom Toolkit")
+st.markdown("Tools to automate your syllabus, door signs, and calendar dates.")
 
 # --- SIDEBAR NAVIGATION ---
-tool_choice = st.sidebar.radio("Select Tool:", ["📅 Syllabus Scheduler", "🚪 Door Sign Generator"])
+tool_choice = st.sidebar.radio("Select Tool:", 
+    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "⏳ ICS Date Shifter"])
 
 # ==========================================
 # TOOL 1: SYLLABUS SCHEDULER
@@ -27,7 +25,7 @@ if tool_choice == "📅 Syllabus Scheduler":
     # 1. Inputs
     col1, col2 = st.columns(2)
     with col1:
-        start_date = st.date_input("First Day of Semester", value=datetime(2026, 1, 6))
+        start_date = st.date_input("First Day of Semester", value=datetime(2026, 1, 12))
         class_number = st.text_input("Class Number (e.g. 1190)", value="1190")
     with col2:
         class_format = st.selectbox("Format", ["In-Person", "Hybrid", "Online"])
@@ -48,7 +46,7 @@ if tool_choice == "📅 Syllabus Scheduler":
     if meet_fri: valid_days.append(4)
 
     # 2. File Upload
-    uploaded_file = st.file_uploader("Upload .ics file", type="ics")
+    uploaded_file = st.file_uploader("Upload .ics file", type="ics", key="syl_upload")
 
     if uploaded_file is not None:
         # Process File
@@ -58,7 +56,7 @@ if tool_choice == "📅 Syllabus Scheduler":
         semester_events = [e for e in c.events if e.begin.date() >= start_date]
         semester_events.sort(key=lambda x: x.begin)
         
-        # --- HTML GENERATION (Your Logic) ---
+        # --- HTML GENERATION ---
         html_output = []
         
         # CSS Block
@@ -104,12 +102,16 @@ if tool_choice == "📅 Syllabus Scheduler":
         # Logic Branching
         if class_format in ["Hybrid", "Online"]:
             # Group by Week
-            events_by_week = defaultdict(list)
+            events_by_week = {}
             for e in semester_events:
-                monday = e.begin.date() - timedelta(days=e.begin.date().weekday())
+                e_date = e.begin.date()
+                # Find Monday
+                monday = e_date - timedelta(days=e_date.weekday())
+                if monday not in events_by_week: events_by_week[monday] = []
                 events_by_week[monday].append(e)
             
-            for week_start in sorted(events_by_week.keys()):
+            sorted_weeks = sorted(events_by_week.keys())
+            for week_start in sorted_weeks:
                 week_events = events_by_week[week_start]
                 label = get_week_label(week_start, start_date, week_events)
                 end_week = week_start + timedelta(days=4)
@@ -139,11 +141,15 @@ if tool_choice == "📅 Syllabus Scheduler":
 
         else:
             # Group by Day (In Person)
-            daily_groups = defaultdict(list)
-            for e in semester_events: daily_groups[e.begin.date()].append(e)
+            daily_groups = {}
+            for e in semester_events:
+                d = e.begin.date()
+                if d not in daily_groups: daily_groups[d] = []
+                daily_groups[d].append(e)
             
+            sorted_days = sorted(daily_groups.keys())
             html_output.append("<div role='list'>")
-            for d_key in sorted(daily_groups.keys()):
+            for d_key in sorted_days:
                 day_events = daily_groups[d_key]
                 date_str = day_events[0].begin.format('ddd, MMM D')
                 content_html = ""
@@ -225,7 +231,8 @@ elif tool_choice == "🚪 Door Sign Generator":
                 if s_raw < 9: s_min += 12*60
                 if e_raw < 9: e_min += 12*60
                 if e_raw < s_raw: e_min += 12*60
-                events.append({"type": "oh", "name": "Virtual Office Hours" if is_virtual else "Office Hours", "days": found_days, "start": s_min, "end": e_min, "loc": ""})
+                name_label = "Virtual Office Hours" if is_virtual else "Office Hours"
+                events.append({"type": "oh", "name": name_label, "days": found_days, "start": s_min, "end": e_min, "loc": ""})
 
         # --- HTML GENERATION (Clean Print Style) ---
         start_hr, end_hr = 9, 20
@@ -292,7 +299,82 @@ elif tool_choice == "🚪 Door Sign Generator":
         
         st.success("✅ Door Sign Generated!")
         st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
+
+# ==========================================
+# TOOL 3: DATE SHIFTER
+# ==========================================
+elif tool_choice == "⏳ ICS Date Shifter":
+    st.header("Class Date Shifter")
+    st.markdown("Take an old ICS file (e.g. from Fall 2024) and shift all dates to the new semester.")
+    
+    shift_file = st.file_uploader("Upload OLD .ics file", type="ics", key="shift_upload")
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        new_start_date = st.date_input("New Semester Start Date", value=datetime(2026, 1, 12))
+    
+    if shift_file:
+        c = Calendar(shift_file.read().decode("utf-8"))
+        events = list(c.events)
+        events.sort(key=lambda x: x.begin)
         
-        # Preview
-        st.write("Preview:")
-        st.components.v1.html(final_html, height=600, scrolling=True)
+        if not events:
+            st.error("No events found in this calendar.")
+        else:
+            first_event = events[0]
+            old_start = first_event.begin.date()
+            
+            st.write(f"**Detected Old Start Date:** {old_start}")
+            st.write(f"**Target New Start Date:** {new_start_date}")
+            
+            # Calculate Shift
+            # We convert both to datetime just to be safe for timedelta
+            delta = new_start_date - old_start
+            days_shift = delta.days
+            
+            st.info(f"Shifting all events by **{days_shift} days**.")
+            
+            if st.button("Shift Dates & Generate Output"):
+                canvas_log = ["Event Name | Old Date | New Date"]
+                canvas_log.append("---|---|---")
+                
+                new_calendar = Calendar()
+                
+                for e in events:
+                    old_date_str = e.begin.format("YYYY-MM-DD")
+                    
+                    # Apply Shift
+                    e.begin += timedelta(days=days_shift)
+                    e.end += timedelta(days=days_shift)
+                    
+                    new_date_str = e.begin.format("YYYY-MM-DD")
+                    
+                    # Add to new calendar
+                    new_calendar.events.add(e)
+                    
+                    # Log for Canvas
+                    canvas_log.append(f"{e.name} | {old_date_str} | {new_date_str}")
+                
+                # Create Downloads
+                st.success("✅ Dates Shifted Successfully!")
+                
+                # 1. New ICS
+                st.download_button(
+                    label="Download Shifted .ics File",
+                    data=str(new_calendar),
+                    file_name="shifted_schedule.ics",
+                    mime="text/calendar"
+                )
+                
+                # 2. Canvas Cheat Sheet
+                log_text = "\n".join(canvas_log)
+                st.download_button(
+                    label="Download Canvas Date List (.txt)",
+                    data=log_text,
+                    file_name="canvas_dates.txt",
+                    mime="text/plain"
+                )
+                
+                # Preview Table
+                st.write("### Canvas Date Preview")
+                st.markdown("\n".join(canvas_log))
