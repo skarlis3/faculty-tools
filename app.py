@@ -6,9 +6,9 @@ import random
 from io import StringIO
 
 # --- PAGE SETUP ---
-st.set_page_config(page_title="Faculty Toolkit", page_icon="💻", layout="wide")
+st.set_page_config(page_title="Faculty Tools", page_icon="🎓", layout="wide")
 
-st.title("🎓 Faculty Toolkit")
+st.title("🎓 Faculty Tools")
 st.markdown("Tools to automate your syllabus, door signs, and calendar dates.")
 
 # --- SIDEBAR NAVIGATION ---
@@ -328,7 +328,6 @@ elif tool_choice == "⏳ ICS Date Shifter":
             st.write(f"**Target New Start Date:** {new_start_date}")
             
             # Calculate Shift
-            # We convert both to datetime just to be safe for timedelta
             delta = new_start_date - old_start
             days_shift = delta.days
             
@@ -343,22 +342,25 @@ elif tool_choice == "⏳ ICS Date Shifter":
                 for e in events:
                     old_date_str = e.begin.format("YYYY-MM-DD")
                     
-                    # Apply Shift
-                    e.begin += timedelta(days=days_shift)
-                    e.end += timedelta(days=days_shift)
+                    # FIX: Handle shifts carefully to prevent "Begin > End" error
+                    if days_shift >= 0:
+                        # Moving forward: Move END first
+                        e.end += timedelta(days=days_shift)
+                        e.begin += timedelta(days=days_shift)
+                    else:
+                        # Moving backward: Move BEGIN first
+                        e.begin += timedelta(days=days_shift)
+                        e.end += timedelta(days=days_shift)
                     
                     new_date_str = e.begin.format("YYYY-MM-DD")
                     
                     # Add to new calendar
                     new_calendar.events.add(e)
                     
-                    # Log for Canvas
                     canvas_log.append(f"{e.name} | {old_date_str} | {new_date_str}")
                 
-                # Create Downloads
                 st.success("✅ Dates Shifted Successfully!")
                 
-                # 1. New ICS
                 st.download_button(
                     label="Download Shifted .ics File",
                     data=str(new_calendar),
@@ -366,7 +368,6 @@ elif tool_choice == "⏳ ICS Date Shifter":
                     mime="text/calendar"
                 )
                 
-                # 2. Canvas Cheat Sheet
                 log_text = "\n".join(canvas_log)
                 st.download_button(
                     label="Download Canvas Date List (.txt)",
@@ -375,6 +376,5 @@ elif tool_choice == "⏳ ICS Date Shifter":
                     mime="text/plain"
                 )
                 
-                # Preview Table
                 st.write("### Canvas Date Preview")
                 st.markdown("\n".join(canvas_log))
