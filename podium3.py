@@ -18,83 +18,85 @@ CLASS_CALENDARS = {
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Classroom Podium v3", page_icon="💻", layout="wide")
 
-# --- GLOBAL CSS (Integrated Massive Agenda) ---
+# --- THE NUCLEAR CSS ---
 st.markdown("""
 <style>
+    /* 1. REMOVE STREAMLIT PADDING - FORCES CONTENT TO THE EDGES */
+    .block-container {
+        padding: 1rem 2rem !important;
+        max-width: 98% !important;
+    }
+
     .stApp {
         background-color: #050a10; 
         background-image: radial-gradient(circle at 0% 0%, #111a2e 0%, #050a10 60%);
     }
 
-    html, body, [class*="css"] {
-        font-family: 'Segoe UI', Roboto, sans-serif;
-        color: #e6edf3;
-    }
-
+    /* 2. FORCE HEADERS */
     .dashboard-title { 
-        font-size: 6vw; 
-        font-weight: 200; 
-        color: #ffffff; 
-        line-height: 1;
-        margin-bottom: 0rem;
+        font-size: 7vw !important; 
+        font-weight: 200 !important;
+        line-height: 1 !important;
+        color: white !important;
     }
     
     .dashboard-subtitle { 
-        font-size: 2vw; 
-        color: #38bdf8; 
-        margin-bottom: 1rem;
+        font-size: 2.5vw !important; 
+        color: #38bdf8 !important; 
+        margin-bottom: 2rem !important;
     }
 
-    .tfw-notice { 
-        background: rgba(3, 105, 161, 0.2);
-        border-left: 3px solid #38bdf8; 
-        color: #cbd5e1; 
-        padding: 1vw; 
-        border-radius: 4px;
-        font-size: 1.1vw; 
-        width: 80%;
-    }
-
-    .glass-card { 
-        background: rgba(13, 17, 23, 0.85); 
-        backdrop-filter: blur(15px); 
-        border: 1px solid rgba(56, 189, 248, 0.4); 
-        border-radius: 12px; 
-        padding: 2vw;
-        margin-bottom: 1.5rem;
-    }
-
-    /* Smaller label for the header */
+    /* 3. THE AGENDA ITEMS (MASSIVE) */
     .card-header {
-        font-size: 2vw; 
-        color: #38bdf8;
-        text-transform: uppercase;
-        letter-spacing: 0.4rem;
-        border-bottom: 2px solid rgba(56, 189, 248, 0.3);
-        padding-bottom: 0.5rem;
-        margin-bottom: 1.5rem;
+        font-size: 2vw !important; 
+        color: #38bdf8 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.4rem !important;
+        border-bottom: 2px solid rgba(56, 189, 248, 0.3) !important;
+        margin-bottom: 1.5rem !important;
     }
 
-    /* MASSIVE ITEMS: This is what students really need to see */
     .card-list {
-        font-size: 5.5vw; 
-        font-weight: 400; 
-        line-height: 1.2;
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
+        font-size: 5.5vw !important; /* Extremely large */
+        font-weight: 400 !important; 
+        line-height: 1.2 !important;
+        list-style-type: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
     .card-list li {
-        margin-bottom: 1rem;
-        padding-left: 1.2rem;
-        border-left: 8px solid #38bdf8;
+        margin-bottom: 1.5rem !important;
+        padding-left: 1.5rem !important;
+        border-left: 10px solid #38bdf8 !important;
+        color: #ffffff !important;
     }
 
+    /* 4. NOTICES AND CARDS */
+    .tfw-notice { 
+        background: rgba(3, 105, 161, 0.3) !important;
+        border-left: 5px solid #38bdf8 !important; 
+        color: #e2e8f0 !important; 
+        padding: 1.5vw !important; 
+        font-size: 1.4vw !important; 
+        width: 90% !important;
+        margin-bottom: 2rem !important;
+    }
+
+    .glass-card { 
+        background: rgba(13, 17, 23, 0.9) !important; 
+        border: 2px solid rgba(56, 189, 248, 0.4) !important; 
+        border-radius: 15px !important; 
+        padding: 2.5vw !important;
+        margin-bottom: 2rem !important;
+    }
+
+    /* Smaller buttons so they don't distract */
     div.stButton > button {
-        font-size: 0.9vw !important;
+        font-size: 1vw !important;
         background: transparent !important;
         border: 1px solid rgba(56, 189, 248, 0.3) !important;
+        color: #94a3b8 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -105,7 +107,7 @@ if 'mode' not in st.session_state:
 
 # --- 1. SETUP SCREEN ---
 if st.session_state.mode == 'setup':
-    st.markdown("## Podium Setup (v3 - Massive Agenda)")
+    st.markdown("## Podium Setup (v3 - Nuclear Edition)")
     col1, col2 = st.columns(2)
     with col1:
         selected_class = st.selectbox("Select Class", list(CLASS_CALENDARS.keys()))
@@ -130,14 +132,14 @@ if st.session_state.mode == 'setup':
 
 # --- 2. WELCOME SCREEN ---
 elif st.session_state.mode == 'welcome':
-    col_left, col_right = st.columns([0.7, 1.3], gap="large") 
+    col_left, col_right = st.columns([0.8, 1.2], gap="large") 
 
     with col_left:
         st.markdown("<div class='dashboard-title'>Hello</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %b %d')}</div>", unsafe_allow_html=True)
         
         if st.session_state.is_tfw:
-            st.markdown(f"<div class='tfw-notice'><strong>TFW Session Today:</strong> Prepare your journal.</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='tfw-notice'><strong>TFW Today:</strong> Prepare your journal.</div>", unsafe_allow_html=True)
             if st.button("Start Writing Session"):
                 st.session_state.mode = 'focus'
                 st.rerun()
@@ -148,9 +150,11 @@ elif st.session_state.mode == 'welcome':
             st.rerun()
 
     with col_right:
+        # Agenda Card
         items = "".join([f"<li>{l.strip()}</li>" for l in st.session_state.agenda.split('\n') if l.strip()])
         st.markdown(f"<div class='glass-card'><div class='card-header'>Agenda</div><ul class='card-list'>{items}</ul></div>", unsafe_allow_html=True)
 
+        # Upcoming Card (smaller font-size forced inline)
         upcoming_evs = []
         if st.session_state.cal_url:
             try:
@@ -161,7 +165,7 @@ elif st.session_state.mode == 'welcome':
                     events = sorted([e for e in c.events if now <= e.begin.date() <= (now + timedelta(days=7))], key=lambda x: x.begin)
                     for e in events:
                         day = "Today" if e.begin.date() == now else e.begin.date().strftime('%a')
-                        upcoming_evs.append(f"<li style='font-size: 2.5vw;'>{e.name} <span style='color:#38bdf8; opacity:0.8;'>({day})</span></li>")
+                        upcoming_evs.append(f"<li style='font-size: 2.5vw !important;'>{e.name} <span style='color:#38bdf8; opacity:0.8;'>({day})</span></li>")
             except: pass
         
         if upcoming_evs:
