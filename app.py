@@ -68,11 +68,11 @@ if tool_choice == "📅 Syllabus Scheduler":
         st.download_button("Download HTML", "\n".join(html_output), f"syllabus_{class_number}.html", "text/html")
 
 # ==========================================
-# TOOL 2: DOOR SIGN GENERATOR (Reverted Styling)
+# TOOL 2: DOOR SIGN GENERATOR (Mon-Thu Version)
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
-    st.markdown("Generates a clean, print-friendly grid (Mon-Fri, 9am-8pm).")
+    st.markdown("Generates a clean, print-friendly grid (Mon-Thu, 9am-8pm).")
 
     raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1190...")
     oh_text = st.text_input("2. Office Hours (e.g., 'Mon/Wed 11-12, Virtual: Tue 5-6'):")
@@ -114,7 +114,8 @@ elif tool_choice == "🚪 Door Sign Generator":
                 loc = "Remote" if "Remote" in line or "remote" in line else "In-Person"
                 events.append({"type": "class", "name": current_class, "days": days, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
-        day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th', 'Fri': 'F'}
+        # Updated Day Map (No Friday)
+        day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th'}
         for part in oh_text.split(','):
             part = part.strip()
             if not part: continue
@@ -133,13 +134,14 @@ elif tool_choice == "🚪 Door Sign Generator":
         start_hr, end_hr = 9, 20
         total_slots = (end_hr - start_hr) * 4
         
-        # Original Colors (The "Old Code" Palette)
+        # Original Colors
         colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5"]
         colors_warm = ["#fff8e1", "#fff3e0", "#fbe9e7"]
         color_map = {}
         
         html_events = ""
-        col_map = {"M": 2, "T": 3, "W": 4, "Th": 5, "F": 6}
+        # Updated Column Map (No Friday)
+        col_map = {"M": 2, "T": 3, "W": 4, "Th": 5}
         
         for ev in events:
             start_offset = ev['start'] - (start_hr * 60)
@@ -163,15 +165,16 @@ elif tool_choice == "🚪 Door Sign Generator":
             label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
             html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
 
+        # UPDATED CSS: 4 Columns (repeat(4, 1fr)) and Grid Line Span 4
         final_html = f"""<!DOCTYPE html><html><head><style>
             body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; }}
             h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 28px; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }}
-            .calendar {{ display: grid; grid-template-columns: 60px repeat(5, 1fr); grid-template-rows: 40px repeat({total_slots}, 1fr); border-top: 2px solid #333; border-bottom: 2px solid #333; height: 900px; width: 100%; max-width: 1000px; margin: 0 auto; background: #fff; background-image: linear-gradient(to right, transparent 60px, #eee 61px, transparent 61px, transparent calc(60px + 20%), #eee calc(60px + 20% + 1px), transparent calc(60px + 20% + 1px), transparent calc(60px + 40%), #eee calc(60px + 40% + 1px), transparent calc(60px + 40% + 1px), transparent calc(60px + 60%), #eee calc(60px + 60% + 1px), transparent calc(60px + 60% + 1px), transparent calc(60px + 80%), #eee calc(60px + 80% + 1px), transparent calc(60px + 80% + 1px)); }}
+            .calendar {{ display: grid; grid-template-columns: 60px repeat(4, 1fr); grid-template-rows: 40px repeat({total_slots}, 1fr); border-top: 2px solid #333; border-bottom: 2px solid #333; height: 900px; width: 100%; max-width: 1000px; margin: 0 auto; background: #fff; background-image: linear-gradient(to right, transparent 60px, #eee 61px, transparent 61px, transparent calc(60px + 25%), #eee calc(60px + 25% + 1px), transparent calc(60px + 25% + 1px), transparent calc(60px + 50%), #eee calc(60px + 50% + 1px), transparent calc(60px + 50% + 1px), transparent calc(60px + 75%), #eee calc(60px + 75% + 1px), transparent calc(60px + 75% + 1px)); }}
             .header {{ background: #fff; color: #000; font-weight: normal; text-align: center; padding-top: 10px; font-size: 18px; border-bottom: 1px solid #ccc; }}
             .time-label {{ grid-column: 1; font-size: 11px; color: #444; text-align: right; padding-right: 10px; transform: translateY(-50%); }}
-            .grid-line {{ grid-column: 2 / span 5; border-top: 1px solid #eee; height: 0; }}
+            .grid-line {{ grid-column: 2 / span 4; border-top: 1px solid #eee; height: 0; }}
             .event {{ margin: 2px; padding: 4px; font-size: 12px; border-radius: 0px; overflow: hidden; z-index: 2; line-height: 1.3; }}
-        </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div><div class="header">Fri</div>{html_times}{html_events}</div></body></html>"""
+        </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div>{html_times}{html_events}</div></body></html>"""
         
         st.success("✅ Door Sign Generated!")
         st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
