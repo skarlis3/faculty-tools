@@ -142,7 +142,7 @@ elif st.session_state.mode == 'welcome':
         st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %b %d')}</div>", unsafe_allow_html=True)
         
         if st.session_state.is_tfw:
-            st.markdown(f"<div class='tfw-notice'><strong>Tech-Free Writing:</strong> Pen/paper ready. Writing starts soon.</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='tfw-notice'><strong>Tech-Free Writing:</strong> Get your pen & TFW journal ready. Writing starts soon.</div>", unsafe_allow_html=True)
             if st.button("Start Writing Session"):
                 st.session_state.mode = 'focus'
                 st.rerun()
