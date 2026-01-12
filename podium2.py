@@ -18,77 +18,70 @@ CLASS_CALENDARS = {
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Classroom Podium v2", page_icon="💻", layout="wide")
 
-# --- FLUID CSS (Responsive for Projectors) ---
+# --- FLUID CSS (Rebalanced) ---
 st.markdown("""
 <style>
-    /* Global Fluidity */
     .stApp {
         background-color: #050a10; 
         background-image: radial-gradient(circle at 0% 0%, #111a2e 0%, #050a10 60%);
     }
 
-    /* Use Viewport Width (vw) for fluid text scaling */
     html, body, [class*="css"] {
         font-family: 'Segoe UI', Roboto, sans-serif;
         color: #e6edf3;
     }
 
     .dashboard-title { 
-        font-size: 8vw; /* Scales with screen width */
+        font-size: 7vw; 
         font-weight: 200; 
         color: #ffffff; 
         line-height: 1;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0rem;
         text-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
     }
     
     .dashboard-subtitle { 
-        font-size: 3vw; 
+        font-size: 2.5vw; 
         color: #38bdf8; 
         font-weight: 500;
-        margin-bottom: 2rem;
-    }
-
-    /* Container for the Welcome Area */
-    .welcome-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-    }
-
-    .tfw-notice { 
-        background: rgba(3, 105, 161, 0.2);
-        border-left: 0.5vw solid #0284c7; 
-        color: #ffffff; 
-        padding: 2vw; 
-        border-radius: 0 8px 8px 0;
-        font-size: 2vw; 
-        line-height: 1.3;
-        width: 90%;
-    }
-
-    /* Responsive Glass Cards */
-    .glass-card { 
-        background: rgba(13, 17, 23, 0.6); 
-        backdrop-filter: blur(12px); 
-        border: 1px solid rgba(56, 189, 248, 0.2); 
-        border-radius: 1rem; 
-        padding: 2vw;
         margin-bottom: 1.5rem;
     }
 
+    /* COMPACT TFW NOTICE */
+    .tfw-notice { 
+        background: rgba(3, 105, 161, 0.3);
+        border-left: 0.4vw solid #38bdf8; 
+        color: #ffffff; 
+        padding: 1.2vw; 
+        border-radius: 4px;
+        font-size: 1.4vw; /* Smaller text for the notice */
+        line-height: 1.2;
+        width: 85%;
+        margin-bottom: 1.5rem;
+    }
+
+    /* LARGER GLASS CARDS */
+    .glass-card { 
+        background: rgba(13, 17, 23, 0.7); 
+        backdrop-filter: blur(15px); 
+        border: 1px solid rgba(56, 189, 248, 0.3); 
+        border-radius: 12px; 
+        padding: 2.5vw;
+        margin-bottom: 2rem;
+    }
+
     .card-header {
-        font-size: 1.5vw;
+        font-size: 2vw; /* Larger Header */
         color: #38bdf8;
         text-transform: uppercase;
-        letter-spacing: 0.2rem;
-        border-bottom: 1px solid rgba(56, 189, 248, 0.2);
-        padding-bottom: 0.5rem;
-        margin-bottom: 1rem;
+        letter-spacing: 0.3rem;
+        border-bottom: 2px solid rgba(56, 189, 248, 0.2);
+        padding-bottom: 0.8rem;
+        margin-bottom: 1.5rem;
     }
 
     .card-list {
-        font-size: 1.8vw;
+        font-size: 2.5vw; /* Much Larger List Text */
         line-height: 1.4;
         list-style-type: none;
         padding: 0;
@@ -96,16 +89,17 @@ st.markdown("""
     }
 
     .card-list li {
-        margin-bottom: 0.8rem;
-        padding-left: 0.5rem;
-        border-left: 2px solid rgba(56, 189, 248, 0.3);
+        margin-bottom: 1.2rem;
+        padding-left: 1rem;
+        border-left: 4px solid #38bdf8;
     }
 
-    /* Buttons scaled for accessibility */
+    /* Ghost Buttons */
     div.stButton > button {
-        font-size: 1.2vw !important;
-        padding: 0.8vw 2vw !important;
-        border-radius: 0.5rem !important;
+        font-size: 1vw !important;
+        padding: 0.5vw 1.5vw !important;
+        background: transparent !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -121,12 +115,12 @@ if st.session_state.mode == 'setup':
     with col1:
         selected_class = st.selectbox("Select Class", list(CLASS_CALENDARS.keys()))
         cal_url = CLASS_CALENDARS[selected_class]
-        agenda_text = st.text_area("Today's Agenda", height=150, value="Freewrite\nTopic\nTopic")
+        agenda_text = st.text_area("Today's Agenda", height=150, value="Freewrite\nDiscussion\nGroup Work")
     with col2:
         st.subheader("Tech-Free Writing")
         is_tfw = st.checkbox("Is today a TFW day?", value=True)
         if is_tfw:
-            tfw_prompt = st.text_area("Writing Prompt", height=100, value="Write about whatever is in your head right now—stress, lunch plans, traffic, or your to-do list. ")
+            tfw_prompt = st.text_area("Writing Prompt", height=100, value="What's on your mind today?")
             tfw_minutes = st.number_input("Duration (minutes)", value=7, min_value=1)
         else:
             tfw_prompt = ""
@@ -139,42 +133,36 @@ if st.session_state.mode == 'setup':
         })
         st.rerun()
 
-# --- 2. WELCOME SCREEN (Fluid Layout) ---
+# --- 2. WELCOME SCREEN ---
 elif st.session_state.mode == 'welcome':
-    col_left, col_right = st.columns([1.6, 1], gap="large")
+    col_left, col_right = st.columns([1, 1.2], gap="large") # Swapped ratio to give Right side (Agenda) more room
 
     with col_left:
-        st.markdown(f"""
-            <div class='welcome-container'>
-                <div class='dashboard-title'>Welcome</div>
-                <div class='dashboard-subtitle'>{datetime.now().strftime('%A, %B %d')}</div>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown("<div class='dashboard-title'>Welcome</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %b %d')}</div>", unsafe_allow_html=True)
         
         if st.session_state.is_tfw:
-            st.markdown(f"<div class='tfw-notice'><strong>Tech-Free Writing:</strong> Get your journal and a pen ready. Writing starts soon.</div>", unsafe_allow_html=True)
-            st.write("")
+            st.markdown(f"<div class='tfw-notice'><strong>Tech-Free Writing:</strong> Pen/paper ready. Writing starts soon.</div>", unsafe_allow_html=True)
             if st.button("Start Writing Session"):
                 st.session_state.mode = 'focus'
                 st.rerun()
 
-        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Edit Setup"):
             st.session_state.mode = 'setup'
             st.rerun()
 
     with col_right:
-        # Agenda Card
+        # Agenda Card (Now significantly larger)
         items = "".join([f"<li>{l.strip()}</li>" for l in st.session_state.agenda.split('\n') if l.strip()])
         st.markdown(f"<div class='glass-card'><div class='card-header'>Today's Agenda</div><ul class='card-list'>{items}</ul></div>", unsafe_allow_html=True)
 
-        # Calendar Logic
+        # Upcoming Card
         upcoming_evs = []
         if st.session_state.cal_url:
             try:
                 r = requests.get(st.session_state.cal_url)
                 if r.status_code == 200:
-                    from ics import Calendar
                     c = Calendar(r.text)
                     now = datetime.now().date()
                     events = sorted([e for e in c.events if now <= e.begin.date() <= (now + timedelta(days=7))], key=lambda x: x.begin)
@@ -186,30 +174,26 @@ elif st.session_state.mode == 'welcome':
         up_list = "".join(upcoming_evs) if upcoming_evs else "<li>No upcoming deadlines</li>"
         st.markdown(f"<div class='glass-card'><div class='card-header'>Upcoming</div><ul class='card-list'>{up_list}</ul></div>", unsafe_allow_html=True)
 
-# --- 3. FOCUS MODE (Full Responsive) ---
+# --- 3. FOCUS MODE ---
 elif st.session_state.mode == 'focus':
-    if st.button("Exit Focus Mode"):
+    if st.button("Exit"):
         st.session_state.mode = 'welcome'
         st.rerun()
 
     prompt = st.session_state.tfw_prompt
     mins = st.session_state.tfw_minutes
     
-    # Using Viewport Height (vh) to ensure it fits the projector vertical space
     focus_html = f"""
     <div style="color:white; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; height:90vh; justify-content:center; text-align:center;">
-        <div style="font-size:4vw; margin-bottom:5vh; font-weight:300; width:80%;">{prompt}</div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:3vw; width:90%;">
-            <div style="background:rgba(255,255,255,0.05); padding:2vw; border-radius:1vw; border:1px solid rgba(56,189,248,0.2);">
-                <div style="color:#38bdf8; font-size:1.5vw; text-transform:uppercase; margin-bottom:1vh;">Reminders</div>
-                <ul style="font-size:2vw; text-align:left; line-height:1.6;">
-                    <li>Devices away</li>
-                    <li>Keep writing</li>
-                </ul>
+        <div style="font-size:5vw; margin-bottom:5vh; font-weight:300; width:90%; color:#ffffff;">{prompt}</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:3vw; width:95%;">
+            <div style="background:rgba(255,255,255,0.05); padding:3vw; border-radius:12px; border:1px solid rgba(56,189,248,0.2);">
+                <div style="color:#38bdf8; font-size:2vw; text-transform:uppercase; margin-bottom:1vh;">Status</div>
+                <div style="font-size:3vw;">Tech-Free</div>
             </div>
-            <div style="background:rgba(255,255,255,0.05); padding:2vw; border-radius:1vw; border:1px solid rgba(56,189,248,0.2);">
-                <div style="color:#38bdf8; font-size:1.5vw; text-transform:uppercase; margin-bottom:1vh;">Time Remaining</div>
-                <div id="t" style="font-size:4vw; color:#7dd3fc;">{mins}:00</div>
+            <div style="background:rgba(255,255,255,0.05); padding:3vw; border-radius:12px; border:1px solid rgba(56,189,248,0.2);">
+                <div style="color:#38bdf8; font-size:2vw; text-transform:uppercase; margin-bottom:1vh;">Time Remaining</div>
+                <div id="t" style="font-size:5vw; color:#7dd3fc; font-weight:bold;">{mins}:00</div>
             </div>
         </div>
     </div>
@@ -225,4 +209,4 @@ elif st.session_state.mode == 'focus':
         }}, 1000);
     </script>
     """
-    components.html(focus_html, height=800)
+    components.html(focus_html, height=850)
