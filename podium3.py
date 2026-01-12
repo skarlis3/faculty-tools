@@ -64,7 +64,7 @@ st.markdown("""
     }
 
     .card-list {
-        font-size: 1.6vw !important; 
+        font-size: 1.4vw !important; 
         font-weight: 300 !important; 
         line-height: 1.5 !important;
         list-style-type: none !important;
@@ -84,7 +84,7 @@ st.markdown("""
         border-left: 3px solid #38bdf8 !important; 
         color: #cbd5e1 !important; 
         padding: 1rem !important; 
-        font-size: 1.2vw !important; 
+        font-size: 1.4vw !important; 
         width: 85% !important;
         margin-bottom: 1.5rem !important;
     }
