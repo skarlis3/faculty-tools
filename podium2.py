@@ -32,32 +32,32 @@ st.markdown("""
     }
 
     .dashboard-title { 
-        font-size: 7vw; 
-        font-weight: 200; 
-        color: #ffffff; 
-        line-height: 1;
-        margin-bottom: 0rem;
-        text-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+        font-size: 7vw !important; 
+        font-weight: 200 !important; 
+        color: #ffffff !important; 
+        line-height: 1 !important;
+        margin-bottom: 0rem !important;
+        text-shadow: 0 0 30px rgba(56, 189, 248, 0.2) !important;
     }
     
     .dashboard-subtitle { 
-        font-size: 2.5vw; 
-        color: #38bdf8; 
-        font-weight: 500;
-        margin-bottom: 1.5rem;
+        font-size: 2.5vw !important; 
+        color: #38bdf8 !important; 
+        font-weight: 500 !important;
+        margin-bottom: 1.5rem !important;
     }
 
     /* COMPACT TFW NOTICE */
     .tfw-notice { 
-        background: rgba(3, 105, 161, 0.3);
-        border-left: 0.4vw solid #38bdf8; 
-        color: #ffffff; 
-        padding: 1.2vw; 
-        border-radius: 4px;
-        font-size: 1.4vw; /* Smaller text for the notice */
-        line-height: 1.2;
-        width: 85%;
-        margin-bottom: 1.5rem;
+        background: rgba(3, 105, 161, 0.3) !important;
+        border-left: 0.4vw solid #38bdf8 !important; 
+        color: #ffffff !important; 
+        padding: 1.2vw !important; 
+        border-radius: 4px !important;
+        font-size: 1.4vw !important; /* Smaller text for the notice */
+        line-height: 1.2 !important;
+        width: 85% !important;
+        margin-bottom: 1.5rem !important;
     }
 
     /* LARGER GLASS CARDS */
@@ -71,27 +71,27 @@ st.markdown("""
     }
 
     .card-header {
-        font-size: 2vw; /* Larger Header */
-        color: #38bdf8;
-        text-transform: uppercase;
-        letter-spacing: 0.3rem;
-        border-bottom: 2px solid rgba(56, 189, 248, 0.2);
-        padding-bottom: 0.8rem;
-        margin-bottom: 1.5rem;
+        font-size: 2vw !important; /* Larger Header */
+        color: #38bdf8 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.3rem !important;
+        border-bottom: 2px solid rgba(56, 189, 248, 0.2) !important;
+        padding-bottom: 0.8rem !important;
+        margin-bottom: 1.5rem !important;
     }
 
     .card-list {
-        font-size: 2.5vw; /* Much Larger List Text */
-        line-height: 1.4;
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
+        font-size: 1.5vw !important; /* Much Larger List Text */
+        line-height: 1.4 !important;
+        list-style-type: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
     .card-list li {
-        margin-bottom: 1.2rem;
-        padding-left: 1rem;
-        border-left: 4px solid #38bdf8;
+        margin-bottom: 1.2rem !important;
+        padding-left: 1rem !important;
+        border-left: 4px solid #38bdf8 !important;
     }
 
     /* Ghost Buttons */
