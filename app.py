@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from ics import Calendar
 from datetime import datetime, timedelta
 import re
@@ -9,11 +10,11 @@ import requests
 st.set_page_config(page_title="Faculty Tools", page_icon="💻", layout="wide")
 
 st.title("🎓 Faculty Tools")
-st.markdown("Tools to automate your syllabus, door signs, and calendar dates.")
+st.markdown("Tools to automate your syllabus, door signs, calendar dates, and assignment sheets.")
 
 # --- SIDEBAR NAVIGATION ---
 tool_choice = st.sidebar.radio("Select Tool:", 
-    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "⏳ ICS Date Shifter"])
+    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "📋 Assignment Sheet Filler", "⏳ ICS Date Shifter"])
 
 # ==========================================
 # TOOL 1: SYLLABUS SCHEDULER
@@ -112,19 +113,15 @@ elif tool_choice == "🚪 Door Sign Generator":
                 days = t_match.group(1).split('/')
                 
                 # --- LOCATION LOGIC ---
-                # 1. Search for Room Number (e.g. SF-310, UC-202)
-                # We look for 1-3 uppercase letters followed by digits. 
-                # (This distinguishes it from "ENGL-1190" which has 4 letters)
                 room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
                 room_num = room_match.group(1) if room_match else ""
 
-                # 2. Determine Display Location
                 if "Remote" in line or "remote" in line:
                     loc = "Remote"
                 elif room_num:
                     loc = room_num
                 else:
-                    loc = "" # Leave blank if In-Person but no room found (removes "In-Person" text)
+                    loc = ""
 
                 events.append({"type": "class", "name": current_class, "days": days, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
@@ -154,7 +151,6 @@ elif tool_choice == "🚪 Door Sign Generator":
         color_map = {}
         
         html_events = ""
-        # Column Map (No Friday)
         col_map = {"M": 2, "T": 3, "W": 4, "Th": 5}
         
         for ev in events:
@@ -171,7 +167,6 @@ elif tool_choice == "🚪 Door Sign Generator":
                 bg, border = random.choice(colors_warm), "#d84315"
             for d in ev['days']:
                 if d in col_map:
-                    # Added conditional break for location so empty strings don't leave a gap
                     loc_html = f"<br>{ev['loc']}" if ev['loc'] else ""
                     html_events += f"""<div class="event" style="grid-column: {col_map[d]}; grid-row: {row_start} / span {row_span}; background: {bg}; border-left: 4px solid {border}; color: #000;"><strong>{ev['name']}</strong>{loc_html}</div>"""
         
@@ -195,7 +190,109 @@ elif tool_choice == "🚪 Door Sign Generator":
         st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
 
 # ==========================================
-# TOOL 3: DATE SHIFTER
+# TOOL 3: ASSIGNMENT SHEET FILLER (NEW)
+# ==========================================
+elif tool_choice == "📋 Assignment Sheet Filler":
+    st.header("📋 Faculty Assignment Helper")
+    st.markdown("Turns messy schedule text into rows you can paste directly into the 'Faculty Assignment' Excel file.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        default_start = st.date_input("Semester Start", value=datetime(2026, 1, 12))
+        default_end = st.date_input("Semester End", value=datetime(2026, 5, 4))
+    with col2:
+        default_type = st.selectbox("Default Contract Type", ["BASE", "EC", "XXC"])
+    
+    messy_text = st.text_area(
+        "Paste Schedule Text (from Canvas, Self-Service, or Email):", 
+        height=150,
+        placeholder="ENGL-1190-101  Mon/Wed  10:00 AM - 11:55 AM  SF-310..."
+    )
+
+    if st.button("Generate Spreadsheet Rows", type="primary"):
+        if not messy_text:
+            st.warning("Please paste some text first.")
+        else:
+            rows = []
+            lines = messy_text.split('\n')
+            for line in lines:
+                line = line.strip()
+                if not line: continue
+                
+                # 1. Identify Class (ENGL-#### or ENGL ####)
+                class_match = re.search(r'([A-Z]{3,4}[- ]\d{4}[- ]?[A-Z0-9]*)', line)
+                if not class_match: continue
+                class_name = class_match.group(1).replace("-", " ")
+                
+                # 2. Extract Time
+                t_match = re.search(r'(\d{1,2}:\d{2}\s*[AP]M\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', line, re.IGNORECASE)
+                time_str = t_match.group(1).upper() if t_match else ""
+                
+                # 3. Extract Days
+                day_str = ""
+                days_found = []
+                day_pattern = re.search(r'([MTWRFS][onueedhriat/]+)', line, re.IGNORECASE)
+                if day_pattern:
+                    day_str = day_pattern.group(1)
+                    if "M" in day_str or "Mon" in day_str: days_found.append("Mon")
+                    if "Tu" in day_str: days_found.append("Tue")
+                    if "W" in day_str: days_found.append("Wed")
+                    if "Th" in day_str or "R" in day_str: days_found.append("Thu")
+                    if "F" in day_str: days_found.append("Fri")
+                    if "Sa" in day_str: days_found.append("Sat")
+                
+                # 4. Extract Room
+                room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
+                room = room_match.group(1) if room_match else ""
+                
+                # 5. Remote Check
+                is_remote = "Remote" in line or "remote" in line or "Online" in line
+                if is_remote and not room: room = "Remote"
+                
+                # 6. Map to Spreadsheet Columns
+                row = {
+                    "Course Code /Section": class_name,
+                    "Cr Hrs": "", 
+                    "Cont Hrs": "", 
+                    "Eq Hrs": "", 
+                    "Contract Type(s)": default_type,
+                    "Combined With": "",
+                    "Begin Date": default_start.strftime("%Y-%m-%d"),
+                    "End Date": default_end.strftime("%Y-%m-%d"),
+                    "Mon": time_str if "Mon" in days_found else "",
+                    "Tue": time_str if "Tue" in days_found else "",
+                    "Wed": time_str if "Wed" in days_found else "",
+                    "Thu": time_str if "Thu" in days_found else "",
+                    "Fri": time_str if "Fri" in days_found else "",
+                    "Sat": time_str if "Sat" in days_found else "",
+                    "Room": room,
+                    "Online Section": "Yes" if is_remote else ""
+                }
+                rows.append(row)
+            
+            if rows:
+                cols = [
+                    "Course Code /Section", "Cr Hrs", "Cont Hrs", "Eq Hrs", "Contract Type(s)", 
+                    "Combined With", "Begin Date", "End Date", 
+                    "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", 
+                    "Room", "Online Section"
+                ]
+                df = pd.DataFrame(rows, columns=cols)
+                
+                st.success(f"Found {len(df)} classes!")
+                edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+                
+                st.write("### How to Paste:")
+                st.markdown("1. Click the copy button below.\n2. Go to your Excel file.\n3. Click the first cell (Course Code) and paste.")
+                
+                # Generate Tab-Separated Values (TSV) for Excel
+                tsv = edited_df.to_csv(sep='\t', index=False, header=False)
+                st.code(tsv, language="text")
+            else:
+                st.error("No classes found. Check your text format.")
+
+# ==========================================
+# TOOL 4: DATE SHIFTER
 # ==========================================
 elif tool_choice == "⏳ ICS Date Shifter":
     st.header("Class Date Shifter")
