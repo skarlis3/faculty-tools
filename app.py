@@ -69,7 +69,7 @@ if tool_choice == "📅 Syllabus Scheduler":
         st.download_button("Download HTML", "\n".join(html_output), f"syllabus_{class_number}.html", "text/html")
 
 # ==========================================
-# TOOL 2: DOOR SIGN GENERATOR (Mon-Thu, Room Nums)
+# TOOL 2: DOOR SIGN GENERATOR
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
@@ -190,7 +190,7 @@ elif tool_choice == "🚪 Door Sign Generator":
         st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
 
 # ==========================================
-# TOOL 3: ASSIGNMENT SHEET FILLER (UPDATED)
+# TOOL 3: ASSIGNMENT SHEET FILLER (FIXED)
 # ==========================================
 elif tool_choice == "📋 Assignment Sheet Filler":
     st.header("📋 Faculty Assignment Helper")
@@ -215,53 +215,96 @@ elif tool_choice == "📋 Assignment Sheet Filler":
         else:
             rows = []
             lines = messy_text.split('\n')
+            
+            # Helper for smart date calculation
+            def get_next_weekday(start_date, target_weekday_iso):
+                # ISO: Mon=1, Sun=7. Streamlit date_input returns object.
+                # Python weekday(): Mon=0, Sun=6.
+                target_idx = target_weekday_iso - 1
+                days_ahead = target_idx - start_date.weekday()
+                if days_ahead < 0: days_ahead += 7
+                return start_date + timedelta(days=days_ahead)
+                
+            day_to_iso = {"Mon":1, "Tue":2, "Wed":3, "Thu":4, "Fri":5, "Sat":6}
+
             for line in lines:
                 line = line.strip()
                 if not line: continue
                 
-                # 1. Identify Class (ENGL-#### or ENGL ####)
+                # 1. Identify Class
                 class_match = re.search(r'([A-Z]{3,4}[- ]\d{4}[- ]?[A-Z0-9]*)', line)
                 if not class_match: continue
                 class_name = class_match.group(1).replace("-", " ")
                 
-                # 2. Extract Time
-                # Allow for "12:00 - 1:55 PM" where the first AM/PM is missing
-                t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', line, re.IGNORECASE)
-                time_str = t_match.group(1).upper() if t_match else ""
-                
+                # 2. Extract Time (Loose Format)
+                # Matches: 12:00-1:55, 12:00 - 1:55 PM, 12:00pm - 1:55pm
+                t_match = re.search(r'(\d{1,2}:\d{2}(?:[a-zA-Z\s]*)\s*-\s*\d{1,2}:\d{2}\s*[a-zA-Z]*)', line, re.IGNORECASE)
+                time_str = ""
+                if t_match:
+                    # Clean up the time string
+                    raw_time = t_match.group(1)
+                    # Force uppercase AM/PM
+                    time_str = raw_time.upper().replace("AM", " AM").replace("PM", " PM").replace("  ", " ").strip()
+
                 # 3. Extract Days (Robust)
                 days_found = set()
+                line_upper = line.upper()
                 
-                # Remove time from line to avoid matching 'M' in 'PM' or 'Room 10'
-                line_no_time = line
-                if t_match:
-                    line_no_time = line.replace(t_match.group(0), "")
+                # Explicit Multi-Day patterns
+                if "M/W" in line_upper or "MW" in line_upper: days_found.update(["Mon", "Wed"])
+                if "T/TH" in line_upper or "TTH" in line_upper or "T/R" in line_upper: days_found.update(["Tue", "Thu"])
                 
-                up_line = line_no_time.upper()
-                
-                # Check explicit combinations first
-                if "M/W" in up_line or "MW" in up_line or "MON/WED" in up_line:
-                    days_found.update(["Mon", "Wed"])
-                if "T/TH" in up_line or "TTH" in up_line or "TUE/THU" in up_line or "T/R" in up_line:
-                    days_found.update(["Tue", "Thu"])
-                
-                # Check individual days (using word boundaries to match "M" but not "MATH")
-                if "MON" in up_line or re.search(r'\bM\b', up_line): days_found.add("Mon")
-                if "TUE" in up_line or re.search(r'\bT\b', up_line) or re.search(r'\bTU\b', up_line): days_found.add("Tue")
-                if "WED" in up_line or re.search(r'\bW\b', up_line): days_found.add("Wed")
-                if "THU" in up_line or re.search(r'\bTH\b', up_line) or re.search(r'\bR\b', up_line): days_found.add("Thu")
-                if "FRI" in up_line or re.search(r'\bF\b', up_line): days_found.add("Fri")
-                if "SAT" in up_line or re.search(r'\bS\b', up_line) or re.search(r'\bSA\b', up_line): days_found.add("Sat")
+                # Single Days
+                if re.search(r'\bMON\b', line_upper) or re.search(r'\bM\b', line_upper): days_found.add("Mon")
+                if re.search(r'\bTUE\b', line_upper) or re.search(r'\bT\b', line_upper): days_found.add("Tue")
+                if re.search(r'\bWED\b', line_upper) or re.search(r'\bW\b', line_upper): days_found.add("Wed")
+                if re.search(r'\bTHU\b', line_upper) or re.search(r'\bTH\b', line_upper) or re.search(r'\bR\b', line_upper): days_found.add("Thu")
+                if re.search(r'\bFRI\b', line_upper) or re.search(r'\bF\b', line_upper): days_found.add("Fri")
 
-                # 4. Extract Room
+                # 4. Dates (Explicit or Smart Calc)
+                # Check for explicit date range (MM/DD/YY - MM/DD/YY)
+                date_range_match = re.search(r'(\d{1,2}/\d{1,2}/\d{2,4})\s*-\s*(\d{1,2}/\d{1,2}/\d{2,4})', line)
+                
+                final_start = default_start
+                final_end = default_end
+                
+                if date_range_match:
+                    # Case A: Found explicit dates in text
+                    try:
+                        # You might need to adjust format if dates are YYYY-MM-DD
+                        d1_str = date_range_match.group(1)
+                        d2_str = date_range_match.group(2)
+                        # Minimal parser assuming US format
+                        def parse_lazy_date(ds):
+                            for fmt in ["%m/%d/%Y", "%m/%d/%y", "%Y-%m-%d"]:
+                                try: return datetime.strptime(ds, fmt).date()
+                                except: continue
+                            return default_start # Fallback
+                        
+                        final_start = parse_lazy_date(d1_str)
+                        final_end = parse_lazy_date(d2_str)
+                    except: pass
+                else:
+                    # Case B: Smart Calculation based on Day of Week
+                    # If class matches Mon/Wed, start date is the first Monday OR Wednesday on/after semester start
+                    if days_found:
+                        # Get ISO numbers for all found days
+                        found_isos = [day_to_iso[d] for d in days_found if d in day_to_iso]
+                        if found_isos:
+                            # Calculate potential start dates for each meeting day
+                            potential_starts = [get_next_weekday(default_start, iso) for iso in found_isos]
+                            # The class starts on the earliest of these
+                            final_start = min(potential_starts)
+
+                # 5. Extract Room
                 room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
                 room = room_match.group(1) if room_match else ""
                 
-                # 5. Remote Check
+                # 6. Remote Check
                 is_remote = "Remote" in line or "remote" in line or "Online" in line
                 if is_remote and not room: room = "Remote"
                 
-                # 6. Map to Spreadsheet Columns
+                # 7. Map to Spreadsheet
                 row = {
                     "Course Code /Section": class_name,
                     "Cr Hrs": "", 
@@ -269,8 +312,8 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                     "Eq Hrs": "", 
                     "Contract Type(s)": default_type,
                     "Combined With": "",
-                    "Begin Date": default_start.strftime("%Y-%m-%d"),
-                    "End Date": default_end.strftime("%Y-%m-%d"),
+                    "Begin Date": final_start.strftime("%Y-%m-%d"),
+                    "End Date": final_end.strftime("%Y-%m-%d"),
                     "Mon": time_str if "Mon" in days_found else "",
                     "Tue": time_str if "Tue" in days_found else "",
                     "Wed": time_str if "Wed" in days_found else "",
@@ -297,7 +340,6 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                 st.write("### How to Paste:")
                 st.markdown("1. Click the copy button below.\n2. Go to your Excel file.\n3. Click the first cell (Course Code) and paste.")
                 
-                # Generate Tab-Separated Values (TSV) for Excel
                 tsv = edited_df.to_csv(sep='\t', index=False, header=False)
                 st.code(tsv, language="text")
             else:
