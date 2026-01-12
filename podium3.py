@@ -84,7 +84,7 @@ st.markdown("""
         border-left: 3px solid #38bdf8 !important; 
         color: #cbd5e1 !important; 
         padding: 1rem !important; 
-        font-size: 1vw !important; 
+        font-size: 1.2vw !important; 
         width: 85% !important;
         margin-bottom: 1.5rem !important;
     }
@@ -143,7 +143,7 @@ elif st.session_state.mode == 'welcome':
         st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %B %d')}</div>", unsafe_allow_html=True)
         
         if st.session_state.is_tfw:
-            st.markdown(f"<div class='tfw-notice'><strong>Tech-Free Writing Today:</strong> Have your journal and pen ready.</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='tfw-notice'><strong>Tech-Free Writing Today</strong> <br/> Have your journal and pen ready.</div>", unsafe_allow_html=True)
             if st.button("Start Writing Session"):
                 st.session_state.mode = 'focus'
                 st.rerun()
