@@ -16,15 +16,15 @@ CLASS_CALENDARS = {
 }
 
 # --- PAGE SETUP ---
-st.set_page_config(page_title="Classroom Podium v3", page_icon="💻", layout="wide")
+st.set_page_config(page_title="Classroom Podium", page_icon="💻", layout="wide")
 
-# --- THE NUCLEAR CSS ---
+# --- BALANCED PROJECTOR CSS ---
 st.markdown("""
 <style>
-    /* 1. REMOVE STREAMLIT PADDING - FORCES CONTENT TO THE EDGES */
+    /* 1. LAYOUT RESET: Ensuring content uses the whole screen */
     .block-container {
-        padding: 1rem 2rem !important;
-        max-width: 98% !important;
+        padding: 2rem 3rem !important;
+        max-width: 95% !important;
     }
 
     .stApp {
@@ -32,92 +32,100 @@ st.markdown("""
         background-image: radial-gradient(circle at 0% 0%, #111a2e 0%, #050a10 60%);
     }
 
-    /* 2. FORCE HEADERS */
+    /* 2. TITLE & SUBTITLE */
     .dashboard-title { 
-        font-size: 7vw !important; 
+        font-size: 5vw !important; 
         font-weight: 200 !important;
         line-height: 1 !important;
         color: white !important;
+        margin-bottom: 0.2rem !important;
     }
     
     .dashboard-subtitle { 
-        font-size: 2.5vw !important; 
+        font-size: 1.8vw !important; 
         color: #38bdf8 !important; 
-        margin-bottom: 2rem !important;
+        margin-bottom: 3rem !important;
+        font-weight: 400 !important;
     }
 
-    /* 3. THE AGENDA ITEMS (MASSIVE) */
+    /* 3. REFINED AGENDA ITEMS */
     .card-header {
-        font-size: 2vw !important; 
+        font-size: 1.4vw !important; 
         color: #38bdf8 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.4rem !important;
-        border-bottom: 2px solid rgba(56, 189, 248, 0.3) !important;
+        letter-spacing: 0.3rem !important;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.3) !important;
+        padding-bottom: 0.8rem !important;
         margin-bottom: 1.5rem !important;
+        opacity: 0.9;
     }
 
     .card-list {
-        font-size: 5.5vw !important; /* Extremely large */
-        font-weight: 400 !important; 
-        line-height: 1.2 !important;
+        font-size: 3.5vw !important; /* Balanced for legibility from the back row */
+        font-weight: 300 !important; 
+        line-height: 1.3 !important;
         list-style-type: none !important;
         padding: 0 !important;
         margin: 0 !important;
     }
 
     .card-list li {
-        margin-bottom: 1.5rem !important;
-        padding-left: 1.5rem !important;
-        border-left: 10px solid #38bdf8 !important;
-        color: #ffffff !important;
+        margin-bottom: 1.2rem !important;
+        padding-left: 1.2rem !important;
+        border-left: 6px solid #38bdf8 !important;
+        color: #e6edf3 !important;
     }
 
-    /* 4. NOTICES AND CARDS */
+    /* 4. TFW BOX & GLASS CARDS */
     .tfw-notice { 
-        background: rgba(3, 105, 161, 0.3) !important;
-        border-left: 5px solid #38bdf8 !important; 
-        color: #e2e8f0 !important; 
+        background: rgba(3, 105, 161, 0.25) !important;
+        border-left: 4px solid #38bdf8 !important; 
+        color: #ffffff !important; 
         padding: 1.5vw !important; 
-        font-size: 1.4vw !important; 
-        width: 90% !important;
+        font-size: 1.3vw !important; 
+        border-radius: 4px !important;
+        width: 85% !important;
         margin-bottom: 2rem !important;
     }
 
     .glass-card { 
-        background: rgba(13, 17, 23, 0.9) !important; 
-        border: 2px solid rgba(56, 189, 248, 0.4) !important; 
-        border-radius: 15px !important; 
-        padding: 2.5vw !important;
+        background: rgba(13, 17, 23, 0.75) !important; 
+        backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(56, 189, 248, 0.3) !important; 
+        border-radius: 12px !important; 
+        padding: 2vw !important;
         margin-bottom: 2rem !important;
     }
 
-    /* Smaller buttons so they don't distract */
+    /* UI BUTTONS */
     div.stButton > button {
-        font-size: 1vw !important;
+        font-size: 0.8vw !important;
         background: transparent !important;
         border: 1px solid rgba(56, 189, 248, 0.3) !important;
         color: #94a3b8 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Session State
+# Session State Initialization
 if 'mode' not in st.session_state:
     st.session_state.mode = 'setup' 
 
 # --- 1. SETUP SCREEN ---
 if st.session_state.mode == 'setup':
-    st.markdown("## Podium Setup (v3 - Nuclear Edition)")
+    st.markdown("## Podium Setup")
     col1, col2 = st.columns(2)
     with col1:
         selected_class = st.selectbox("Select Class", list(CLASS_CALENDARS.keys()))
         cal_url = CLASS_CALENDARS[selected_class]
-        agenda_text = st.text_area("Today's Agenda", height=150, value="Freewrite\nDiscussion\nGroup Work")
+        agenda_text = st.text_area("Today's Agenda", height=150, value="Freewrite\nDiscussion\nGroup Activity")
     with col2:
         st.subheader("Tech-Free Writing")
         is_tfw = st.checkbox("Is today a TFW day?", value=True)
         if is_tfw:
-            tfw_prompt = st.text_area("Writing Prompt", height=100, value="What's on your mind today?")
+            tfw_prompt = st.text_area("Writing Prompt", height=100, value="Write about whatever is in your head right now...")
             tfw_minutes = st.number_input("Duration (minutes)", value=7, min_value=1)
         else:
             tfw_prompt = ""
@@ -132,14 +140,14 @@ if st.session_state.mode == 'setup':
 
 # --- 2. WELCOME SCREEN ---
 elif st.session_state.mode == 'welcome':
-    col_left, col_right = st.columns([0.8, 1.2], gap="large") 
+    col_left, col_right = st.columns([1, 1], gap="large") 
 
     with col_left:
-        st.markdown("<div class='dashboard-title'>Hello</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %b %d')}</div>", unsafe_allow_html=True)
+        st.markdown("<div class='dashboard-title'>Welcome</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %B %d')}</div>", unsafe_allow_html=True)
         
         if st.session_state.is_tfw:
-            st.markdown(f"<div class='tfw-notice'><strong>TFW Today:</strong> Prepare your journal.</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='tfw-notice'><strong>Tech-Free Writing Today:</strong> Please prepare your journal and pen.</div>", unsafe_allow_html=True)
             if st.button("Start Writing Session"):
                 st.session_state.mode = 'focus'
                 st.rerun()
@@ -152,9 +160,9 @@ elif st.session_state.mode == 'welcome':
     with col_right:
         # Agenda Card
         items = "".join([f"<li>{l.strip()}</li>" for l in st.session_state.agenda.split('\n') if l.strip()])
-        st.markdown(f"<div class='glass-card'><div class='card-header'>Agenda</div><ul class='card-list'>{items}</ul></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='glass-card'><div class='card-header'>Today's Agenda</div><ul class='card-list'>{items}</ul></div>", unsafe_allow_html=True)
 
-        # Upcoming Card (smaller font-size forced inline)
+        # Upcoming Card (Forced smaller than main agenda)
         upcoming_evs = []
         if st.session_state.cal_url:
             try:
@@ -165,7 +173,7 @@ elif st.session_state.mode == 'welcome':
                     events = sorted([e for e in c.events if now <= e.begin.date() <= (now + timedelta(days=7))], key=lambda x: x.begin)
                     for e in events:
                         day = "Today" if e.begin.date() == now else e.begin.date().strftime('%a')
-                        upcoming_evs.append(f"<li style='font-size: 2.5vw !important;'>{e.name} <span style='color:#38bdf8; opacity:0.8;'>({day})</span></li>")
+                        upcoming_evs.append(f"<li style='font-size: 2vw !important;'>{e.name} <span style='color:#38bdf8; opacity:0.8;'>({day})</span></li>")
             except: pass
         
         if upcoming_evs:
@@ -183,15 +191,15 @@ elif st.session_state.mode == 'focus':
     
     focus_html = f"""
     <div style="color:white; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; height:90vh; justify-content:center; text-align:center;">
-        <div style="font-size:6vw; margin-bottom:5vh; font-weight:300; width:90%; color:#ffffff;">{prompt}</div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:3vw; width:95%;">
+        <div style="font-size:4.5vw; margin-bottom:5vh; font-weight:300; width:85%; color:#ffffff; line-height:1.2;">{prompt}</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:3vw; width:90%;">
             <div style="background:rgba(255,255,255,0.05); padding:3vw; border-radius:12px; border:1px solid rgba(56,189,248,0.2);">
-                <div style="color:#38bdf8; font-size:2vw; text-transform:uppercase; margin-bottom:1vh;">Status</div>
-                <div style="font-size:3vw;">Tech-Free</div>
+                <div style="color:#38bdf8; font-size:1.5vw; text-transform:uppercase; margin-bottom:1vh;">Status</div>
+                <div style="font-size:2.5vw;">Tech-Free</div>
             </div>
             <div style="background:rgba(255,255,255,0.05); padding:3vw; border-radius:12px; border:1px solid rgba(56,189,248,0.2);">
-                <div style="color:#38bdf8; font-size:2vw; text-transform:uppercase; margin-bottom:1vh;">Time Remaining</div>
-                <div id="t" style="font-size:6vw; color:#7dd3fc; font-weight:bold;">{mins}:00</div>
+                <div style="color:#38bdf8; font-size:1.5vw; text-transform:uppercase; margin-bottom:1vh;">Time Remaining</div>
+                <div id="t" style="font-size:5vw; color:#7dd3fc; font-weight:bold;">{mins}:00</div>
             </div>
         </div>
     </div>
