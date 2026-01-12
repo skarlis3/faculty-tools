@@ -68,13 +68,13 @@ if tool_choice == "📅 Syllabus Scheduler":
         st.download_button("Download HTML", "\n".join(html_output), f"syllabus_{class_number}.html", "text/html")
 
 # ==========================================
-# TOOL 2: DOOR SIGN GENERATOR (Mon-Thu Version)
+# TOOL 2: DOOR SIGN GENERATOR (Mon-Thu, Room Nums)
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
     st.markdown("Generates a clean, print-friendly grid (Mon-Thu, 9am-8pm).")
 
-    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1190...")
+    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1190... SF-310")
     oh_text = st.text_input("2. Office Hours (e.g., 'Mon/Wed 11-12, Virtual: Tue 5-6'):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
@@ -110,11 +110,25 @@ elif tool_choice == "🚪 Door Sign Generator":
             t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
             if t_match and current_class:
                 days = t_match.group(1).split('/')
-                # Simple logic: If it says Remote, mark it Remote
-                loc = "Remote" if "Remote" in line or "remote" in line else "In-Person"
+                
+                # --- LOCATION LOGIC ---
+                # 1. Search for Room Number (e.g. SF-310, UC-202)
+                # We look for 1-3 uppercase letters followed by digits. 
+                # (This distinguishes it from "ENGL-1190" which has 4 letters)
+                room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
+                room_num = room_match.group(1) if room_match else ""
+
+                # 2. Determine Display Location
+                if "Remote" in line or "remote" in line:
+                    loc = "Remote"
+                elif room_num:
+                    loc = room_num
+                else:
+                    loc = "" # Leave blank if In-Person but no room found (removes "In-Person" text)
+
                 events.append({"type": "class", "name": current_class, "days": days, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
-        # Updated Day Map (No Friday)
+        # Day Map (No Friday)
         day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th'}
         for part in oh_text.split(','):
             part = part.strip()
@@ -134,13 +148,13 @@ elif tool_choice == "🚪 Door Sign Generator":
         start_hr, end_hr = 9, 20
         total_slots = (end_hr - start_hr) * 4
         
-        # Original Colors
+        # Colors
         colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5"]
         colors_warm = ["#fff8e1", "#fff3e0", "#fbe9e7"]
         color_map = {}
         
         html_events = ""
-        # Updated Column Map (No Friday)
+        # Column Map (No Friday)
         col_map = {"M": 2, "T": 3, "W": 4, "Th": 5}
         
         for ev in events:
@@ -157,7 +171,9 @@ elif tool_choice == "🚪 Door Sign Generator":
                 bg, border = random.choice(colors_warm), "#d84315"
             for d in ev['days']:
                 if d in col_map:
-                    html_events += f"""<div class="event" style="grid-column: {col_map[d]}; grid-row: {row_start} / span {row_span}; background: {bg}; border-left: 4px solid {border}; color: #000;"><strong>{ev['name']}</strong><br>{ev['loc']}</div>"""
+                    # Added conditional break for location so empty strings don't leave a gap
+                    loc_html = f"<br>{ev['loc']}" if ev['loc'] else ""
+                    html_events += f"""<div class="event" style="grid-column: {col_map[d]}; grid-row: {row_start} / span {row_span}; background: {bg}; border-left: 4px solid {border}; color: #000;"><strong>{ev['name']}</strong>{loc_html}</div>"""
         
         html_times = ""
         for h in range(start_hr, end_hr + 1):
@@ -165,7 +181,6 @@ elif tool_choice == "🚪 Door Sign Generator":
             label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
             html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
 
-        # UPDATED CSS: 4 Columns (repeat(4, 1fr)) and Grid Line Span 4
         final_html = f"""<!DOCTYPE html><html><head><style>
             body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; }}
             h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 28px; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }}
