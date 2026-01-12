@@ -91,7 +91,7 @@ st.markdown("""
         padding: 20px; 
         margin-top: 10px; 
         border-radius: 0 8px 8px 0;
-        font-size: 1.1em;
+        font-size: 1.2em;
     }
     
     /* BUTTONS: GHOST STYLE */
