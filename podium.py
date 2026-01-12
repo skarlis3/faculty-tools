@@ -183,7 +183,8 @@ elif st.session_state.mode == 'welcome':
                         edate = e.begin.date()
                         if now <= edate <= (now + timedelta(days=7)):
                             day_label = "Today" if edate == now else edate.strftime('%a')
-                            upcoming_evs.append(f"{e.name} <span style='color:#64748b; font-size:0.8em'>({day_label})</span>")
+                            # UPDATED STYLE: Electric Blue, Bolder, Larger
+                            upcoming_evs.append(f"{e.name} <span style='color:#38bdf8; font-weight:600; font-size:1.1em; margin-left:8px;'>({day_label})</span>")
             except: pass
         
         up_content = f"<ul class='card-list'>{''.join([f'<li>{x}</li>' for x in upcoming_evs])}</ul>" if upcoming_evs else "<div style='color:#94a3b8; font-style:italic;'>No upcoming deadlines found.</div>"
