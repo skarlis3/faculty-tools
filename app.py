@@ -190,7 +190,7 @@ elif tool_choice == "🚪 Door Sign Generator":
         st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
 
 # ==========================================
-# TOOL 3: ASSIGNMENT SHEET FILLER (NEW)
+# TOOL 3: ASSIGNMENT SHEET FILLER (UPDATED)
 # ==========================================
 elif tool_choice == "📋 Assignment Sheet Filler":
     st.header("📋 Faculty Assignment Helper")
@@ -225,22 +225,34 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                 class_name = class_match.group(1).replace("-", " ")
                 
                 # 2. Extract Time
-                t_match = re.search(r'(\d{1,2}:\d{2}\s*[AP]M\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', line, re.IGNORECASE)
+                # Allow for "12:00 - 1:55 PM" where the first AM/PM is missing
+                t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', line, re.IGNORECASE)
                 time_str = t_match.group(1).upper() if t_match else ""
                 
-                # 3. Extract Days
-                day_str = ""
-                days_found = []
-                day_pattern = re.search(r'([MTWRFS][onueedhriat/]+)', line, re.IGNORECASE)
-                if day_pattern:
-                    day_str = day_pattern.group(1)
-                    if "M" in day_str or "Mon" in day_str: days_found.append("Mon")
-                    if "Tu" in day_str: days_found.append("Tue")
-                    if "W" in day_str: days_found.append("Wed")
-                    if "Th" in day_str or "R" in day_str: days_found.append("Thu")
-                    if "F" in day_str: days_found.append("Fri")
-                    if "Sa" in day_str: days_found.append("Sat")
+                # 3. Extract Days (Robust)
+                days_found = set()
                 
+                # Remove time from line to avoid matching 'M' in 'PM' or 'Room 10'
+                line_no_time = line
+                if t_match:
+                    line_no_time = line.replace(t_match.group(0), "")
+                
+                up_line = line_no_time.upper()
+                
+                # Check explicit combinations first
+                if "M/W" in up_line or "MW" in up_line or "MON/WED" in up_line:
+                    days_found.update(["Mon", "Wed"])
+                if "T/TH" in up_line or "TTH" in up_line or "TUE/THU" in up_line or "T/R" in up_line:
+                    days_found.update(["Tue", "Thu"])
+                
+                # Check individual days (using word boundaries to match "M" but not "MATH")
+                if "MON" in up_line or re.search(r'\bM\b', up_line): days_found.add("Mon")
+                if "TUE" in up_line or re.search(r'\bT\b', up_line) or re.search(r'\bTU\b', up_line): days_found.add("Tue")
+                if "WED" in up_line or re.search(r'\bW\b', up_line): days_found.add("Wed")
+                if "THU" in up_line or re.search(r'\bTH\b', up_line) or re.search(r'\bR\b', up_line): days_found.add("Thu")
+                if "FRI" in up_line or re.search(r'\bF\b', up_line): days_found.add("Fri")
+                if "SAT" in up_line or re.search(r'\bS\b', up_line) or re.search(r'\bSA\b', up_line): days_found.add("Sat")
+
                 # 4. Extract Room
                 room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
                 room = room_match.group(1) if room_match else ""
