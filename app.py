@@ -68,13 +68,13 @@ if tool_choice == "📅 Syllabus Scheduler":
         st.download_button("Download HTML", "\n".join(html_output), f"syllabus_{class_number}.html", "text/html")
 
 # ==========================================
-# TOOL 2: DOOR SIGN GENERATOR
+# TOOL 2: DOOR SIGN GENERATOR (Reverted Styling)
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
     st.markdown("Generates a clean, print-friendly grid (Mon-Fri, 9am-8pm).")
 
-    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1190-101 ... SF-310")
+    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1190...")
     oh_text = st.text_input("2. Office Hours (e.g., 'Mon/Wed 11-12, Virtual: Tue 5-6'):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
@@ -100,46 +100,20 @@ elif tool_choice == "🚪 Door Sign Generator":
         events = []
         lines = raw_schedule.split('\n')
         current_class = None
-        
         for line in lines:
             line = line.strip()
             if not line: continue
-            
-            # 1. Identify Class Name (ENGL-####)
             if line.startswith("ENGL-"):
                 match = re.search(r'(ENGL-\d+)', line)
                 current_class = match.group(1).replace("-", " ") if match else "Class"
             
-            # 2. Extract Time
             t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
-            
             if t_match and current_class:
                 days = t_match.group(1).split('/')
-                
-                # 3. Extract Room Number (Looks for pattern like SF-310, UC-202, usually Uppercase-Number)
-                room_match = re.search(r'\b([A-Z]{1,4}-\d{3,4})\b', line)
-                room_num = room_match.group(1) if room_match else ""
-                
-                # 4. Identify Remote
-                is_remote = "Remote" in line or "remote" in line
-                
-                # Build Display Name
-                display_name = current_class
-                if room_num:
-                    display_name += f" ({room_num})"
-                
-                loc_label = "Remote" if is_remote else ""
-                
-                events.append({
-                    "type": "class", 
-                    "name": display_name, 
-                    "days": days, 
-                    "start": get_minutes(t_match.group(2)), 
-                    "end": get_minutes(t_match.group(3)), 
-                    "loc": loc_label
-                })
+                # Simple logic: If it says Remote, mark it Remote
+                loc = "Remote" if "Remote" in line or "remote" in line else "In-Person"
+                events.append({"type": "class", "name": current_class, "days": days, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
-        # Process Office Hours
         day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th', 'Fri': 'F'}
         for part in oh_text.split(','):
             part = part.strip()
@@ -156,13 +130,12 @@ elif tool_choice == "🚪 Door Sign Generator":
                 name_label = "Virtual Office Hours" if is_virtual else "Office Hours"
                 events.append({"type": "oh", "name": name_label, "days": found_days, "start": s_min, "end": e_min, "loc": ""})
 
-        # --- HTML GENERATION ---
         start_hr, end_hr = 9, 20
         total_slots = (end_hr - start_hr) * 4
         
-        # Colors that print well
-        colors_cool = ["#d1e7dd", "#cfe2ff", "#e2e3e5", "#f8d7da"] # Bootstrap-ish pastels
-        colors_warm = ["#fff3cd", "#ffecb5"]
+        # Original Colors (The "Old Code" Palette)
+        colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5"]
+        colors_warm = ["#fff8e1", "#fff3e0", "#fbe9e7"]
         color_map = {}
         
         html_events = ""
@@ -175,25 +148,14 @@ elif tool_choice == "🚪 Door Sign Generator":
             row_start = int(start_offset / 15) + 2
             row_span = int((end_offset - start_offset) / 15)
             if row_span < 1: row_span = 1
-            
             if ev['type'] == 'class':
-                base_name = ev['name'].split('(')[0].strip() # Color based on class name, not room
-                if base_name not in color_map: color_map[base_name] = random.choice(colors_cool)
-                bg, border_color = color_map[base_name], "#000"
+                if ev['name'] not in color_map: color_map[ev['name']] = random.choice(colors_cool)
+                bg, border = color_map[ev['name']], "#546e7a"
             else:
-                bg, border_color = random.choice(colors_warm), "#000"
-                
+                bg, border = random.choice(colors_warm), "#d84315"
             for d in ev['days']:
                 if d in col_map:
-                    html_events += f"""
-                    <div class="event" style="
-                        grid-column: {col_map[d]}; 
-                        grid-row: {row_start} / span {row_span}; 
-                        background: {bg} !important; 
-                        border: 1px solid {border_color};
-                        color: #000;">
-                        <strong>{ev['name']}</strong><br>{ev['loc']}
-                    </div>"""
+                    html_events += f"""<div class="event" style="grid-column: {col_map[d]}; grid-row: {row_start} / span {row_span}; background: {bg}; border-left: 4px solid {border}; color: #000;"><strong>{ev['name']}</strong><br>{ev['loc']}</div>"""
         
         html_times = ""
         for h in range(start_hr, end_hr + 1):
@@ -201,63 +163,14 @@ elif tool_choice == "🚪 Door Sign Generator":
             label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
             html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
 
-        # Condensed CSS for one-page printing
         final_html = f"""<!DOCTYPE html><html><head><style>
-            @media print {{
-                @page {{ size: portrait; margin: 0.25in; }}
-                body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
-            }}
-            body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 10px; }}
-            h1 {{ text-align: center; color: #000; font-weight: bold; font-size: 24px; margin: 0 0 20px 0; text-transform: uppercase; }}
-            
-            .calendar {{ 
-                display: grid; 
-                grid-template-columns: 50px repeat(5, 1fr); 
-                grid-template-rows: 30px repeat({total_slots}, 1fr); 
-                border-top: 2px solid #000; 
-                border-bottom: 2px solid #000; 
-                height: 750px; /* Condensed Height */
-                width: 100%; 
-                margin: 0 auto; 
-                background: #fff; 
-                /* Subtle grid background */
-                background-image: linear-gradient(to right, transparent 50px, #ccc 51px, transparent 51px);
-            }}
-            
-            .header {{ 
-                background: #f0f0f0; 
-                color: #000; 
-                font-weight: bold; 
-                text-align: center; 
-                padding-top: 5px; 
-                font-size: 16px; 
-                border-bottom: 2px solid #000; 
-            }}
-            
-            .time-label {{ 
-                grid-column: 1; 
-                font-size: 10px; 
-                color: #444; 
-                text-align: right; 
-                padding-right: 5px; 
-                transform: translateY(-50%); 
-            }}
-            
-            .grid-line {{ 
-                grid-column: 2 / span 5; 
-                border-top: 1px solid #ddd; 
-                height: 0; 
-            }}
-            
-            .event {{ 
-                margin: 1px; 
-                padding: 2px 4px; 
-                font-size: 11px; 
-                overflow: hidden; 
-                z-index: 2; 
-                line-height: 1.2; 
-                box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-            }}
+            body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; }}
+            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 28px; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }}
+            .calendar {{ display: grid; grid-template-columns: 60px repeat(5, 1fr); grid-template-rows: 40px repeat({total_slots}, 1fr); border-top: 2px solid #333; border-bottom: 2px solid #333; height: 900px; width: 100%; max-width: 1000px; margin: 0 auto; background: #fff; background-image: linear-gradient(to right, transparent 60px, #eee 61px, transparent 61px, transparent calc(60px + 20%), #eee calc(60px + 20% + 1px), transparent calc(60px + 20% + 1px), transparent calc(60px + 40%), #eee calc(60px + 40% + 1px), transparent calc(60px + 40% + 1px), transparent calc(60px + 60%), #eee calc(60px + 60% + 1px), transparent calc(60px + 60% + 1px), transparent calc(60px + 80%), #eee calc(60px + 80% + 1px), transparent calc(60px + 80% + 1px)); }}
+            .header {{ background: #fff; color: #000; font-weight: normal; text-align: center; padding-top: 10px; font-size: 18px; border-bottom: 1px solid #ccc; }}
+            .time-label {{ grid-column: 1; font-size: 11px; color: #444; text-align: right; padding-right: 10px; transform: translateY(-50%); }}
+            .grid-line {{ grid-column: 2 / span 5; border-top: 1px solid #eee; height: 0; }}
+            .event {{ margin: 2px; padding: 4px; font-size: 12px; border-radius: 0px; overflow: hidden; z-index: 2; line-height: 1.3; }}
         </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div><div class="header">Fri</div>{html_times}{html_events}</div></body></html>"""
         
         st.success("✅ Door Sign Generated!")
