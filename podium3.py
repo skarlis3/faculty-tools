@@ -44,7 +44,7 @@ st.markdown("""
     }
     
     .dashboard-subtitle { 
-        font-size: 1.2vw !important; 
+        font-size: 1.3vw !important; 
         color: #38bdf8 !important; 
         margin-bottom: 2.5rem !important;
         font-weight: 400 !important;
@@ -54,7 +54,7 @@ st.markdown("""
 
     /* 3. CARDS & HEADERS */
     .card-header {
-        font-size: 1.1vw !important; 
+        font-size: 1.2vw !important; 
         color: #38bdf8 !important;
         text-transform: uppercase !important;
         letter-spacing: 2px !important;
@@ -64,7 +64,7 @@ st.markdown("""
     }
 
     .card-list {
-        font-size: 1.8vw !important; 
+        font-size: 1.6vw !important; 
         font-weight: 300 !important; 
         line-height: 1.5 !important;
         list-style-type: none !important;
