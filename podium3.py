@@ -18,13 +18,16 @@ CLASS_CALENDARS = {
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Classroom Podium", page_icon="💻", layout="wide")
 
-# --- GLOBAL CSS (Scaled Down) ---
+# --- GLOBAL CSS ---
 st.markdown("""
 <style>
-    /* Content Padding Reset */
+    /* 1. INCREASED TOP PADDING - Pushes content down from the top edge */
     .block-container {
-        padding: 2rem 4rem !important;
-        max-width: 90% !important;
+        padding-top: 10vh !important; 
+        padding-bottom: 2rem !important;
+        padding-left: 5vw !important;
+        padding-right: 5vw !important;
+        max-width: 95% !important;
     }
 
     .stApp {
@@ -32,24 +35,24 @@ st.markdown("""
         background-image: radial-gradient(circle at 0% 0%, #111a2e 0%, #050a10 60%);
     }
 
-    /* Titles */
+    /* 2. TITLES */
     .dashboard-title { 
         font-size: 3.5vw !important; 
         font-weight: 300 !important;
         color: white !important;
-        margin-bottom: 0 !important;
+        margin-bottom: 0.2rem !important;
     }
     
     .dashboard-subtitle { 
         font-size: 1.2vw !important; 
         color: #38bdf8 !important; 
-        margin-bottom: 2rem !important;
+        margin-bottom: 2.5rem !important;
         font-weight: 400 !important;
         text-transform: uppercase;
         letter-spacing: 2px;
     }
 
-    /* Cards & Headers */
+    /* 3. CARDS & HEADERS */
     .card-header {
         font-size: 1.1vw !important; 
         color: #38bdf8 !important;
@@ -61,7 +64,7 @@ st.markdown("""
     }
 
     .card-list {
-        font-size: 1.8vw !important; /* Scaled down from 3.5vw */
+        font-size: 1.8vw !important; 
         font-weight: 300 !important; 
         line-height: 1.5 !important;
         list-style-type: none !important;
@@ -75,14 +78,14 @@ st.markdown("""
         color: #e6edf3 !important;
     }
 
-    /* Notices */
+    /* 4. NOTICES */
     .tfw-notice { 
         background: rgba(3, 105, 161, 0.15) !important;
         border-left: 3px solid #38bdf8 !important; 
         color: #cbd5e1 !important; 
         padding: 1rem !important; 
         font-size: 1vw !important; 
-        width: 80% !important;
+        width: 85% !important;
         margin-bottom: 1.5rem !important;
     }
 
@@ -95,7 +98,6 @@ st.markdown("""
         margin-bottom: 1.5rem !important;
     }
     
-    /* Small Button Styling */
     div.stButton > button {
         font-size: 0.8rem !important;
         padding: 0.2rem 1rem !important;
@@ -114,7 +116,7 @@ if st.session_state.mode == 'setup':
     with col1:
         selected_class = st.selectbox("Select Class", list(CLASS_CALENDARS.keys()))
         cal_url = CLASS_CALENDARS[selected_class]
-        agenda_text = st.text_area("Today's Agenda", height=150, value="Freewrite\nDiscussion\nNext Steps")
+        agenda_text = st.text_area("Today's Agenda", height=150, value="Freewrite\nDiscussion\nActivity")
     with col2:
         st.subheader("Tech-Free Writing")
         is_tfw = st.checkbox("Is today a TFW day?", value=True)
@@ -152,11 +154,9 @@ elif st.session_state.mode == 'welcome':
             st.rerun()
 
     with col_right:
-        # Today's Agenda
         items = "".join([f"<li>{l.strip()}</li>" for l in st.session_state.agenda.split('\n') if l.strip()])
         st.markdown(f"<div class='glass-card'><div class='card-header'>Today's Agenda</div><ul class='card-list'>{items}</ul></div>", unsafe_allow_html=True)
 
-        # Upcoming Deadlines
         upcoming_evs = []
         if st.session_state.cal_url:
             try:
@@ -170,7 +170,6 @@ elif st.session_state.mode == 'welcome':
                         upcoming_evs.append(f"<li style='font-size: 1.2vw !important;'>{e.name} <span style='color:#38bdf8; opacity:0.8;'>({day})</span></li>")
             except: pass
         
-        # Display the box even if empty so the layout stays consistent
         up_content = "".join(upcoming_evs) if upcoming_evs else "<li style='font-size: 1vw; color: #94a3b8; font-style: italic;'>No upcoming deadlines found.</li>"
         st.markdown(f"<div class='glass-card'><div class='card-header'>Upcoming</div><ul class='card-list'>{up_content}</ul></div>", unsafe_allow_html=True)
 
@@ -185,7 +184,7 @@ elif st.session_state.mode == 'focus':
     
     focus_html = f"""
     <div style="color:white; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; height:90vh; justify-content:center; text-align:center;">
-        <div style="font-size:3.5vw; margin-bottom:5vh; font-weight:300; width:80%; color:#ffffff; line-height:1.3;">{prompt}</div>
+        <div style="font-size:3vw; margin-bottom:5vh; font-weight:300; width:80%; color:#ffffff; line-height:1.3;">{prompt}</div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:3vw; width:80%;">
             <div style="background:rgba(255,255,255,0.05); padding:2vw; border-radius:10px; border:1px solid rgba(56,189,248,0.2);">
                 <div style="color:#38bdf8; font-size:1.2vw; text-transform:uppercase; margin-bottom:1vh;">Status</div>
