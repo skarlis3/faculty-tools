@@ -172,50 +172,48 @@ elif tool_choice == "🚪 Door Sign Generator":
             label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
             html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
 
-        # --- UPDATED HTML FOR PRINT FIX ---
+        # --- UPDATED HTML FOR CENTERED/SMALLER PRINT ---
         final_html = f"""<!DOCTYPE html><html><head><style>
-            body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; }}
-            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 28px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }}
+            body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
+            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 24px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }}
             .calendar {{ 
                 display: grid; 
-                grid-template-columns: 60px repeat(4, 1fr); 
-                grid-template-rows: 40px repeat({total_slots}, 1fr); 
-                border-top: 2px solid #333; 
-                border-bottom: 2px solid #333; 
-                height: 950px; 
+                grid-template-columns: 50px repeat(4, 1fr); 
+                grid-template-rows: 35px repeat({total_slots}, 1fr); 
+                border: 2px solid #333; 
+                height: 850px; 
                 width: 100%; 
-                max-width: 1000px; 
-                margin: 0 auto; 
+                max-width: 800px; 
                 background: #fff; 
-                /* Gradient for screen viewing */
-                background-image: linear-gradient(to right, transparent 60px, #eee 61px, transparent 61px, transparent calc(60px + 25%), #eee calc(60px + 25% + 1px), transparent calc(60px + 25% + 1px), transparent calc(60px + 50%), #eee calc(60px + 50% + 1px), transparent calc(60px + 50% + 1px), transparent calc(60px + 75%), #eee calc(60px + 75% + 1px), transparent calc(60px + 75% + 1px)); 
+                background-image: linear-gradient(to right, transparent 50px, #eee 51px, transparent 51px, transparent calc(50px + 25%), #eee calc(50px + 25% + 1px), transparent calc(50px + 25% + 1px), transparent calc(50px + 50%), #eee calc(50px + 50% + 1px), transparent calc(50px + 50% + 1px), transparent calc(50px + 75%), #eee calc(50px + 75% + 1px), transparent calc(50px + 75% + 1px)); 
             }}
-            .header {{ background: #fff; color: #000; font-weight: bold; text-align: center; padding-top: 10px; font-size: 18px; border-bottom: 1px solid #ccc; }}
-            .time-label {{ grid-column: 1; font-size: 11px; color: #444; text-align: right; padding-right: 10px; transform: translateY(-50%); }}
+            .header {{ background: #fff; color: #000; font-weight: bold; text-align: center; padding-top: 5px; font-size: 16px; border-bottom: 1px solid #ccc; }}
+            .time-label {{ grid-column: 1; font-size: 10px; color: #444; text-align: right; padding-right: 8px; transform: translateY(-50%); }}
             .grid-line {{ grid-column: 2 / span 4; border-top: 1px solid #eee; height: 0; }}
             .event {{ 
-                margin: 2px; 
-                padding: 4px; 
-                font-size: 12px; 
+                margin: 1px; 
+                padding: 3px; 
+                font-size: 11px; 
                 border-radius: 0px; 
                 overflow: hidden; 
                 z-index: 2; 
-                line-height: 1.3;
-                /* Force background colors to print */
+                line-height: 1.2;
                 print-color-adjust: exact; 
                 -webkit-print-color-adjust: exact; 
             }}
             
-            /* Specific Print Rules */
             @media print {{
-                body {{ padding: 0; margin: 0; }}
+                @page {{ margin: 0.5in; }}
+                body {{ padding: 0; margin: 0; justify-content: center; }}
+                h1 {{ font-size: 20px; margin-bottom: 10px; }}
                 .calendar {{ 
-                    background-image: none !important; /* Removes gradient to stop black streaks */
-                    border: 1px solid #333; 
-                    height: 98vh; /* Fits typical A4/Letter height */
+                    background-image: none !important; 
+                    height: auto;
+                    min-height: 700px;
+                    transform: scale(0.9); /* Shrunk and centered effect */
+                    transform-origin: top center;
                 }}
                 .grid-line {{ border-top: 1px solid #ddd !important; }}
-                /* Force browsers to render the background colors */
                 * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
             }}
         </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div>{html_times}{html_events}</div></body></html>"""
