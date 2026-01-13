@@ -71,7 +71,7 @@ st.markdown("""
     }
     
     .card-header {
-        font-size: 1.2vw !important; 
+        font-size: 1.4vw !important; 
         color: #38bdf8 !important; 
         margin-bottom: 15px !important;
         text-transform: uppercase !important;
