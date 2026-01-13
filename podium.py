@@ -154,7 +154,8 @@ if st.session_state.mode == 'setup':
 
 # --- 2. WELCOME SCREEN ---
 elif st.session_state.mode == 'welcome':
-    left_col, right_col = st.columns([1.5, 1], gap="large")
+    # ADJUSTED: Changed ratio from [1.5, 1] to [0.8, 1.2] to make Agenda wider
+    left_col, right_col = st.columns([0.8, 1.2], gap="large")
 
     with left_col:
         st.markdown(f"<div class='dashboard-title'>Welcome to Class</div>", unsafe_allow_html=True)
