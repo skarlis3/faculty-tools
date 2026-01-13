@@ -160,7 +160,8 @@ elif tool_choice == "🚪 Door Sign Generator":
                 if ev['name'] not in color_map: color_map[ev['name']] = random.choice(colors_cool)
                 bg, border = color_map[ev['name']], "#546e7a"
             else:
-                bg, border = random.choice(colors_warm), "#d84315"
+                bg = "#fff8e1"  # A very light cream/yellow
+                border = "#d84315" # The dark orange/red left border
             for d in ev['days']:
                 if d in col_map:
                     loc_html = f"<br>{ev['loc']}" if ev['loc'] else ""
