@@ -65,7 +65,7 @@ st.markdown("""
     .dashboard-subtitle { 
         font-size: 2em !important; 
         color: #38bdf8 !important; 
-        margin-bottom: 50px !important; 
+        margin-bottom: 30px !important; 
         font-weight: 500 !important;
         letter-spacing: 1px !important;
     }
@@ -158,7 +158,7 @@ elif st.session_state.mode == 'welcome':
     left_col, right_col = st.columns([0.8, 1.2], gap="large")
 
     with left_col:
-        st.markdown(f"<div class='dashboard-title'>Welcome to Class</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='dashboard-title'>Welcome</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %B %d')}</div>", unsafe_allow_html=True)
         
         if st.session_state.is_tfw:
