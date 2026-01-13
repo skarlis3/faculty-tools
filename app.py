@@ -172,27 +172,43 @@ elif tool_choice == "🚪 Door Sign Generator":
             label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
             html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
 
-        # --- UPDATED HTML FOR CENTERED/SMALLER PRINT ---
+        # --- UPDATED HTML: REMOVED BORDER, ADDED PADDING ---
         final_html = f"""<!DOCTYPE html><html><head><style>
             body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
-            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 24px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }}
+            h1 {{ 
+                text-align: center; 
+                color: #000; 
+                font-weight: normal; 
+                font-size: 24px; 
+                margin-bottom: 50px; /* Increased padding under title */
+                text-transform: uppercase; 
+                letter-spacing: 1.5px; 
+            }}
             .calendar {{ 
                 display: grid; 
                 grid-template-columns: 50px repeat(4, 1fr); 
                 grid-template-rows: 35px repeat({total_slots}, 1fr); 
-                border: 2px solid #333; 
+                border: none; /* Removed schedule border */
                 height: 850px; 
                 width: 100%; 
                 max-width: 800px; 
                 background: #fff; 
                 background-image: linear-gradient(to right, transparent 50px, #eee 51px, transparent 51px, transparent calc(50px + 25%), #eee calc(50px + 25% + 1px), transparent calc(50px + 25% + 1px), transparent calc(50px + 50%), #eee calc(50px + 50% + 1px), transparent calc(50px + 50% + 1px), transparent calc(50px + 75%), #eee calc(50px + 75% + 1px), transparent calc(50px + 75% + 1px)); 
             }}
-            .header {{ background: #fff; color: #000; font-weight: bold; text-align: center; padding-top: 5px; font-size: 16px; border-bottom: 1px solid #ccc; }}
-            .time-label {{ grid-column: 1; font-size: 10px; color: #444; text-align: right; padding-right: 8px; transform: translateY(-50%); }}
+            .header {{ 
+                background: #fff; 
+                color: #000; 
+                font-weight: bold; 
+                text-align: center; 
+                padding-top: 5px; 
+                font-size: 16px; 
+                border-bottom: 1px solid #ccc; 
+            }}
+            .time-label {{ grid-column: 1; font-size: 10px; color: #444; text-align: right; padding-right: 12px; transform: translateY(-50%); }}
             .grid-line {{ grid-column: 2 / span 4; border-top: 1px solid #eee; height: 0; }}
             .event {{ 
                 margin: 1px; 
-                padding: 3px; 
+                padding: 4px; 
                 font-size: 11px; 
                 border-radius: 0px; 
                 overflow: hidden; 
@@ -204,13 +220,14 @@ elif tool_choice == "🚪 Door Sign Generator":
             
             @media print {{
                 @page {{ margin: 0.5in; }}
-                body {{ padding: 0; margin: 0; justify-content: center; }}
-                h1 {{ font-size: 20px; margin-bottom: 10px; }}
+                body {{ padding: 0; margin: 0; justify-content: flex-start; }}
+                h1 {{ font-size: 20px; margin-bottom: 40px; }}
                 .calendar {{ 
                     background-image: none !important; 
+                    border: none !important; /* Force remove border for print */
                     height: auto;
                     min-height: 700px;
-                    transform: scale(0.9); /* Shrunk and centered effect */
+                    transform: scale(0.9); 
                     transform-origin: top center;
                 }}
                 .grid-line {{ border-top: 1px solid #ddd !important; }}
