@@ -19,15 +19,28 @@ CLASS_CALENDARS = {
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Classroom Podium", page_icon="💻", layout="wide")
 
+# --- INITIALIZE SESSION STATE ---
+# This block ensures your data persists even if you click "Edit"
+if 'mode' not in st.session_state:
+    st.session_state.mode = 'setup'
+if 'selected_class' not in st.session_state:
+    st.session_state.selected_class = list(CLASS_CALENDARS.keys())[0]
+if 'agenda' not in st.session_state:
+    st.session_state.agenda = "Freewrite\nTopic\nTopic"
+if 'is_tfw' not in st.session_state:
+    st.session_state.is_tfw = True
+if 'tfw_prompt' not in st.session_state:
+    st.session_state.tfw_prompt = "Write about whatever is in your head right now—stress, lunch plans, traffic, or your to-do list."
+if 'tfw_minutes' not in st.session_state:
+    st.session_state.tfw_minutes = 7
+
 # --- GLOBAL CSS ---
 st.markdown("""
 <style>
-    /* ADDED: Top padding for projector visibility */
     .block-container {
         padding-top: 5rem !important;
     }
 
-    /* Global Background */
     .stApp {
         background-color: #050a10 !important; 
         background-image: radial-gradient(circle at 0% 0%, #111a2e 0%, #050a10 60%) !important;
@@ -39,7 +52,6 @@ st.markdown("""
         color: #e6edf3 !important;
     }
     
-    /* GLASS CARDS (Welcome Screen) */
     .glass-card { 
         background: rgba(13, 17, 23, 0.6) !important; 
         backdrop-filter: blur(12px) !important; 
@@ -51,7 +63,6 @@ st.markdown("""
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2) !important;
     }
     
-    /* HEADERS */
     .dashboard-title { 
         font-size: 5em !important; 
         font-weight: 200 !important; 
@@ -88,7 +99,6 @@ st.markdown("""
         padding-left: 5px !important;
     }
     
-    /* TFW Notice Box */
     .tfw-notice { 
         background: linear-gradient(90deg, rgba(3, 105, 161, 0.2) 0%, rgba(3, 105, 161, 0.05) 100%) !important;
         border-left: 4px solid #0284c7 !important; 
@@ -99,7 +109,6 @@ st.markdown("""
         font-size: 1.4vw !important; 
     }
     
-    /* BUTTONS: GHOST STYLE */
     div.stButton > button {
         background: transparent !important;
         color: rgba(56, 189, 248, 0.7) !important; 
@@ -120,31 +129,33 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Session State
-if 'mode' not in st.session_state:
-    st.session_state.mode = 'setup' 
-
 # --- 1. SETUP SCREEN ---
 if st.session_state.mode == 'setup':
     st.markdown("## Podium Setup")
     col1, col2 = st.columns(2)
     with col1:
-        selected_class = st.selectbox("Select Class", list(CLASS_CALENDARS.keys()))
-        cal_url = CLASS_CALENDARS[selected_class]
-        agenda_text = st.text_area("Today's Agenda", height=150, value="Freewrite\nTopic\nTopic")
+        # Widgets now pull their 'index' or 'value' from session_state
+        class_options = list(CLASS_CALENDARS.keys())
+        default_index = class_options.index(st.session_state.selected_class)
+        selected_class = st.selectbox("Select Class", class_options, index=default_index)
+        
+        agenda_text = st.text_area("Today's Agenda", height=150, value=st.session_state.agenda)
+        
     with col2:
         st.subheader("Tech-Free Writing")
-        is_tfw = st.checkbox("Is today a TFW day?", value=True)
+        is_tfw = st.checkbox("Is today a TFW day?", value=st.session_state.is_tfw)
         if is_tfw:
-            tfw_prompt = st.text_area("Writing Prompt", height=100, value="Write about whatever is in your head right now—stress, lunch plans, traffic, or your to-do list. ")
-            tfw_minutes = st.number_input("Duration (minutes)", value=7, min_value=1)
+            tfw_prompt = st.text_area("Writing Prompt", height=100, value=st.session_state.tfw_prompt)
+            tfw_minutes = st.number_input("Duration (minutes)", value=st.session_state.tfw_minutes, min_value=1)
         else:
             tfw_prompt = ""
             tfw_minutes = 0
 
     st.write("")
     if st.button("Launch Welcome Screen", type="primary", use_container_width=True):
-        st.session_state.cal_url = cal_url
+        # Update session state with the newest entries
+        st.session_state.selected_class = selected_class
+        st.session_state.cal_url = CLASS_CALENDARS[selected_class]
         st.session_state.agenda = agenda_text
         st.session_state.is_tfw = is_tfw
         st.session_state.tfw_prompt = tfw_prompt
@@ -154,7 +165,6 @@ if st.session_state.mode == 'setup':
 
 # --- 2. WELCOME SCREEN ---
 elif st.session_state.mode == 'welcome':
-    # ADJUSTED: Changed ratio from [1.5, 1] to [0.8, 1.2] to make Agenda wider
     left_col, right_col = st.columns([0.8, 1.2], gap="large")
 
     with left_col:
@@ -178,7 +188,7 @@ elif st.session_state.mode == 'welcome':
         st.markdown(f"<div class='glass-card'><div class='card-header'>Today's Agenda</div><ul class='card-list'>{agenda_items}</ul></div>", unsafe_allow_html=True)
 
         upcoming_evs = []
-        if st.session_state.cal_url:
+        if 'cal_url' in st.session_state and st.session_state.cal_url:
             try:
                 r = requests.get(st.session_state.cal_url)
                 if r.status_code == 200:
@@ -195,7 +205,7 @@ elif st.session_state.mode == 'welcome':
         up_content = f"<ul class='card-list'>{''.join([f'<li>{x}</li>' for x in upcoming_evs])}</ul>" if upcoming_evs else "<div style='color:#94a3b8; font-style:italic;'>No upcoming deadlines found.</div>"
         st.markdown(f"<div class='glass-card'><div class='card-header'>Upcoming</div>{up_content}</div>", unsafe_allow_html=True)
 
-# --- 3. FOCUS MODE (JAVASCRIPT VERSION) ---
+# --- 3. FOCUS MODE ---
 elif st.session_state.mode == 'focus':
     c1, c2 = st.columns([11, 1])
     with c1: st.write("")
@@ -207,7 +217,6 @@ elif st.session_state.mode == 'focus':
     total_minutes = st.session_state.tfw_minutes
     prompt_text = st.session_state.tfw_prompt
     
-    # HTML/JS Code Block
     focus_html = f"""
     <!DOCTYPE html>
     <html>
@@ -244,12 +253,10 @@ elif st.session_state.mode == 'focus':
         .card {{
             background: rgba(13, 17, 23, 0.6);
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(56, 189, 248, 0.2);
             border-radius: 12px;
             padding: 30px;
             height: 300px;
-            /* Top Align */
             display: flex;
             flex-direction: column;
             justify-content: flex-start; 
@@ -267,34 +274,26 @@ elif st.session_state.mode == 'focus':
             left: 30px;
             right: 30px;
         }}
-        .content-box {{
-            margin-top: 60px; /* Push content down below header */
-        }}
-        
-        /* Reminders Text */
+        .content-box {{ margin-top: 60px; }}
         ul {{
-            font-size: 1.25em; /* Lighter sizing */
-            font-weight: 200; /* Thin font */
+            font-size: 1.25em;
+            font-weight: 200;
             color: #e2e8f0;
             line-height: 1.6;
             padding-left: 20px;
-            margin: 0;
         }}
-        
-        /* Timer Text */
         #timer {{
-            font-size: 1.2em; /* Small */
-            font-weight: 200; /* Thin */
+            font-size: 1.2em;
+            font-weight: 200;
             color: #7dd3fc;
             text-align: center;
-            opacity: 0.7; /* Background focus */
-            margin-top: 80px; /* Push down to center-ish */
+            opacity: 0.7;
+            margin-top: 80px;
         }}
-        
         #progress-container {{
             width: 100%;
             background-color: rgba(56, 189, 248, 0.1);
-            height: 4px; /* Thinner bar */
+            height: 4px;
             border-radius: 2px;
             margin-top: 20px;
             overflow: hidden;
@@ -309,7 +308,6 @@ elif st.session_state.mode == 'focus':
     </head>
     <body>
         <div class="prompt">{prompt_text}</div>
-        
         <div class="grid">
             <div class="card">
                 <div class="card-header">Reminders</div>
@@ -321,7 +319,6 @@ elif st.session_state.mode == 'focus':
                     </ul>
                 </div>
             </div>
-            
             <div class="card">
                 <div class="card-header">Time Remaining</div>
                 <div class="content-box">
@@ -332,12 +329,10 @@ elif st.session_state.mode == 'focus':
                 </div>
             </div>
         </div>
-
         <script>
             const totalMinutes = {total_minutes};
             const totalSeconds = totalMinutes * 60;
             let remaining = totalSeconds;
-            
             function getFuzzy(seconds) {{
                 let minutes = seconds / 60;
                 if (minutes >= 5) return "About " + Math.round(minutes) + " minutes";
@@ -350,32 +345,23 @@ elif st.session_state.mode == 'focus':
                 if (minutes > 0) return "< 1 minute";
                 return "Time is up";
             }}
-
             const timerEl = document.getElementById('timer');
             const barEl = document.getElementById('progress-bar');
-            
             const interval = setInterval(() => {{
                 remaining--;
                 timerEl.innerText = getFuzzy(remaining);
-                
-                if (remaining < 60) {{
-                    timerEl.style.color = "#facc15"; 
-                }}
-
+                if (remaining < 60) {{ timerEl.style.color = "#facc15"; }}
                 const pct = ((totalSeconds - remaining) / totalSeconds) * 100;
                 barEl.style.width = pct + "%";
-
                 if (remaining <= 0) {{
                     clearInterval(interval);
                     timerEl.innerText = "Time is up";
                     barEl.style.width = "100%";
                 }}
             }}, 1000);
-            
             timerEl.innerText = getFuzzy(remaining);
         </script>
     </body>
     </html>
     """
-    
     components.html(focus_html, height=850, scrolling=False)
