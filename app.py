@@ -4,7 +4,6 @@ from ics import Calendar
 from datetime import datetime, timedelta
 import re
 import random
-import requests
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Faculty Tools", page_icon="💻", layout="wide")
@@ -110,9 +109,8 @@ elif tool_choice == "🚪 Door Sign Generator":
             
             t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
             if t_match and current_class:
-                days = t_match.group(1).split('/')
+                days_list = t_match.group(1).split('/')
                 
-                # --- LOCATION LOGIC ---
                 room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
                 room_num = room_match.group(1) if room_match else ""
 
@@ -123,9 +121,8 @@ elif tool_choice == "🚪 Door Sign Generator":
                 else:
                     loc = ""
 
-                events.append({"type": "class", "name": current_class, "days": days, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
+                events.append({"type": "class", "name": current_class, "days": days_list, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
-        # Day Map (No Friday)
         day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th'}
         for part in oh_text.split(','):
             part = part.strip()
@@ -145,7 +142,6 @@ elif tool_choice == "🚪 Door Sign Generator":
         start_hr, end_hr = 9, 20
         total_slots = (end_hr - start_hr) * 4
         
-        # Colors
         colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5"]
         colors_warm = ["#fff8e1", "#fff3e0", "#fbe9e7"]
         color_map = {}
@@ -176,30 +172,27 @@ elif tool_choice == "🚪 Door Sign Generator":
             label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
             html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
 
-final_html = f"""<!DOCTYPE html><html><head><style>
+        # --- UPDATED HTML FOR PRINT FIX ---
+        final_html = f"""<!DOCTYPE html><html><head><style>
             body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; }}
-            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 28px; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }}
-            
-            /* The Calendar Grid */
+            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 28px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }}
             .calendar {{ 
                 display: grid; 
                 grid-template-columns: 60px repeat(4, 1fr); 
                 grid-template-rows: 40px repeat({total_slots}, 1fr); 
                 border-top: 2px solid #333; 
                 border-bottom: 2px solid #333; 
-                height: 900px; 
+                height: 950px; 
                 width: 100%; 
                 max-width: 1000px; 
                 margin: 0 auto; 
                 background: #fff; 
-                /* Simplified grid lines for better printing */
+                /* Gradient for screen viewing */
                 background-image: linear-gradient(to right, transparent 60px, #eee 61px, transparent 61px, transparent calc(60px + 25%), #eee calc(60px + 25% + 1px), transparent calc(60px + 25% + 1px), transparent calc(60px + 50%), #eee calc(60px + 50% + 1px), transparent calc(60px + 50% + 1px), transparent calc(60px + 75%), #eee calc(60px + 75% + 1px), transparent calc(60px + 75% + 1px)); 
             }}
-            
             .header {{ background: #fff; color: #000; font-weight: bold; text-align: center; padding-top: 10px; font-size: 18px; border-bottom: 1px solid #ccc; }}
             .time-label {{ grid-column: 1; font-size: 11px; color: #444; text-align: right; padding-right: 10px; transform: translateY(-50%); }}
             .grid-line {{ grid-column: 2 / span 4; border-top: 1px solid #eee; height: 0; }}
-            
             .event {{ 
                 margin: 2px; 
                 padding: 4px; 
@@ -207,26 +200,28 @@ final_html = f"""<!DOCTYPE html><html><head><style>
                 border-radius: 0px; 
                 overflow: hidden; 
                 z-index: 2; 
-                line-height: 1.3; 
-                /* This ensures colors show up in print previews */
+                line-height: 1.3;
+                /* Force background colors to print */
                 print-color-adjust: exact; 
                 -webkit-print-color-adjust: exact; 
             }}
-
-            /* Specific Print Optimizations */
+            
+            /* Specific Print Rules */
             @media print {{
                 body {{ padding: 0; margin: 0; }}
                 .calendar {{ 
-                    height: 95vh; /* Scale to fit page height */
-                    background-image: none !important; /* Remove the gradient to stop "streaks" */
-                    border: 1px solid #333;
+                    background-image: none !important; /* Removes gradient to stop black streaks */
+                    border: 1px solid #333; 
+                    height: 98vh; /* Fits typical A4/Letter height */
                 }}
                 .grid-line {{ border-top: 1px solid #ddd !important; }}
-                .event {{ border: 1px solid #ccc !important; }}
-                /* Force background colors to print */
+                /* Force browsers to render the background colors */
                 * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
             }}
         </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div>{html_times}{html_events}</div></body></html>"""
+        
+        st.success("✅ Door Sign Generated!")
+        st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
 
 # ==========================================
 # TOOL 3: ASSIGNMENT SHEET FILLER
@@ -248,7 +243,6 @@ elif tool_choice == "📋 Assignment Sheet Filler":
         if not messy_text:
             st.warning("Please paste some text first.")
         else:
-            # Anchor: Find every Course Code
             course_pattern = r'([A-Z]{3,4}-\d{4}-[A-Z0-9]+)'
             starts = [m.start() for m in re.finditer(course_pattern, messy_text)]
             starts.append(len(messy_text)) 
@@ -342,11 +336,7 @@ elif tool_choice == "⏳ ICS Date Shifter":
             if st.button(f"Shift by {delta.days} days"):
                 new_c = Calendar()
                 for e in events:
-                    if delta.days >= 0:
-                        e.end += timedelta(days=delta.days)
-                        e.begin += timedelta(days=delta.days)
-                    else:
-                        e.begin += timedelta(days=delta.days)
-                        e.end += timedelta(days=delta.days)
+                    e.end += timedelta(days=delta.days)
+                    e.begin += timedelta(days=delta.days)
                     new_c.events.add(e)
                 st.download_button("Download ICS", str(new_c), "shifted.ics")
