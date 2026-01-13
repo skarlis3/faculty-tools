@@ -71,7 +71,7 @@ st.markdown("""
     }
     
     .card-header {
-        font-size: 1.1em !important;
+        font-size: 1.2vw !important; 
         color: #38bdf8 !important; 
         margin-bottom: 15px !important;
         text-transform: uppercase !important;
@@ -81,7 +81,7 @@ st.markdown("""
     }
     
     .card-list {
-        font-size: 1.1em !important; 
+        font-size: 1.4vw !important; 
         line-height: 1.6 !important;
         color: #e6edf3 !important;
         list-style-position: inside !important;
@@ -96,7 +96,7 @@ st.markdown("""
         padding: 20px !important; 
         margin-top: 10px !important; 
         border-radius: 0 8px 8px 0 !important;
-        font-size: 1.2em !important;
+        font-size: 1.4vw !important; 
     }
     
     /* BUTTONS: GHOST STYLE */
@@ -161,7 +161,7 @@ elif st.session_state.mode == 'welcome':
         st.markdown(f"<div class='dashboard-subtitle'>{datetime.now().strftime('%A, %B %d')}</div>", unsafe_allow_html=True)
         
         if st.session_state.is_tfw:
-            st.markdown("""<div class='tfw-notice'><strong>Tech-Free Writing Today &nbsp;</strong>Please get your TFW journal and make sure you have a pen/pencil.</div>""", unsafe_allow_html=True)
+            st.markdown("""<div class='tfw-notice'><strong>Tech-Free Writing Today</strong><br/>Please get your TFW journal and make sure you have a pen/pencil.</div>""", unsafe_allow_html=True)
             st.write(""); st.write("")
             if st.button("Start Writing Session"):
                 st.session_state.mode = 'focus'
