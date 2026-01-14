@@ -122,14 +122,14 @@ if tool_choice == "📅 Syllabus Schedule":
             st.error("No events found after the selected start date.")
 
 # ==========================================
-# TOOL 2: DOOR SIGN GENERATOR
+# TOOL 2: DOOR SIGN GENERATOR (UPDATED)
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
-    st.markdown("Generates a clean, print-friendly grid (Mon-Thu, 9am-8pm).")
+    st.markdown("Generates a print-friendly grid. Now includes Fridays and dynamic hour scaling.")
 
-    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1190-S1628... SF-310")
-    oh_text = st.text_input("2. Office Hours (e.g., 'Mon/Wed 11-12, Virtual: Tue 5-6'):")
+    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1181-O0812\nENGL-1190-H1234\nMW 9:00 AM - 10:30 AM...")
+    oh_text = st.text_input("2. Office Hours (e.g., 'Mon/Wed 11-12, Fri 9-10'):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
     if st.button("Generate Door Sign"):
@@ -152,30 +152,63 @@ elif tool_choice == "🚪 Door Sign Generator":
             except: return 0
 
         events = []
+        online_only_classes = []
         lines = raw_schedule.split('\n')
-        current_class = None
+        
+        # Step 1: Parse the text into distinct class blocks or lines
+        current_class_name = None
+        current_section = None
+        
         for line in lines:
             line = line.strip()
             if not line: continue
             
-            # Capture Class + Section (e.g., ENGL 1170 S1628)
-            if "ENGL-" in line:
-                match = re.search(r'(ENGL-\d+-[A-Z0-9]+)', line)
-                if match:
-                    current_class = match.group(1).replace("-", " ")
-                else:
-                    match_simple = re.search(r'(ENGL-\d+)', line)
-                    current_class = match_simple.group(1).replace("-", " ") if match_simple else "Class"
-            
+            # Identify Class + Section
+            class_match = re.search(r'ENGL[- ](\d+)[- ]([A-Z0-9]+)', line)
+            if class_match:
+                current_class_name = f"ENGL {class_match.group(1)}"
+                current_section = class_match.group(2)
+                full_code = f"{current_class_name} {current_section}"
+                
+                # Check if it's an Online class (Starts with O)
+                # We flag it. If no time is found in subsequent lines for this class, it stays online.
+                if current_section.startswith('O'):
+                    if full_code not in online_only_classes:
+                        online_only_classes.append(full_code)
+
+            # Look for Time/Day pattern
             t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
-            if t_match and current_class:
-                days_list = t_match.group(1).split('/')
+            if t_match and current_class_name:
+                # If we found a time, and it was previously in the online_only list (because of section O), 
+                # remove it from online_only because it actually has a meeting time (like a Hybrid or Sync class)
+                full_code = f"{current_class_name} {current_section}"
+                if full_code in online_only_classes:
+                    online_only_classes.remove(full_code)
+                
+                days_list = []
+                raw_days = t_match.group(1)
+                # Map standard abbreviations to our col_map keys
+                if 'M' in raw_days: days_list.append('M')
+                if 'T' in raw_days: days_list.append('T')
+                if 'W' in raw_days: days_list.append('W')
+                if 'R' in raw_days or 'TH' in raw_days.upper(): days_list.append('Th')
+                if 'F' in raw_days: days_list.append('F')
+                
                 room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
                 room_num = room_match.group(1) if room_match else ""
                 loc = "Remote" if ("Remote" in line or "remote" in line) else (room_num if room_num else "")
-                events.append({"type": "class", "name": current_class, "days": days_list, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
+                
+                events.append({
+                    "type": "class", 
+                    "name": full_code, 
+                    "days": days_list, 
+                    "start": get_minutes(t_match.group(2)), 
+                    "end": get_minutes(t_match.group(3)), 
+                    "loc": loc
+                })
 
-        day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th'}
+        # Step 2: Parse Office Hours
+        day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th', 'Fri': 'F'}
         for part in oh_text.split(','):
             part = part.strip()
             if not part: continue
@@ -185,31 +218,40 @@ elif tool_choice == "🚪 Door Sign Generator":
             if len(nums) >= 2:
                 s_raw, e_raw = int(nums[0]), int(nums[1])
                 s_min, e_min = s_raw * 60, e_raw * 60
-                if s_raw < 9: s_min += 12*60
-                if e_raw < 9: e_min += 12*60
+                if s_raw < 8: s_min += 12*60
+                if e_raw < 8: e_min += 12*60
                 if e_raw < s_raw: e_min += 12*60
                 name_label = "Virtual Office Hours" if is_virtual else "Office Hours"
                 events.append({"type": "oh", "name": name_label, "days": found_days, "start": s_min, "end": e_min, "loc": ""})
 
-        start_hr, end_hr = 9, 20
+        # Step 3: Determine Dynamic Hour Range
+        if events:
+            min_time = min(e['start'] for e in events)
+            max_time = max(e['end'] for e in events)
+            start_hr = max(0, (min_time // 60) - 1)  # 1 hour padding
+            end_hr = min(23, (max_time // 60) + 1)   # 1 hour padding
+        else:
+            start_hr, end_hr = 9, 17 # Default if empty
+
         total_slots = (end_hr - start_hr) * 4
         colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5", "#fff3e0", "#f1f8e9"]
         color_map = {}
         html_events = ""
-        col_map = {"M": 2, "T": 3, "W": 4, "Th": 5}
+        col_map = {"M": 2, "T": 3, "W": 4, "Th": 5, "F": 6}
         
         for ev in events:
             start_offset = ev['start'] - (start_hr * 60)
             end_offset = ev['end'] - (start_hr * 60)
-            if start_offset < 0: continue
             row_start = int(start_offset / 15) + 2
             row_span = int((end_offset - start_offset) / 15)
             if row_span < 1: row_span = 1
+            
             if ev['type'] == 'class':
                 if ev['name'] not in color_map: color_map[ev['name']] = colors_cool[len(color_map) % len(colors_cool)]
                 bg, border = color_map[ev['name']], "#546e7a"
             else:
                 bg, border = "#fff8e1", "#d84315"
+                
             for d in ev['days']:
                 if d in col_map:
                     loc_html = f"<br>{ev['loc']}" if ev['loc'] else ""
@@ -221,19 +263,26 @@ elif tool_choice == "🚪 Door Sign Generator":
             label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
             html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
 
+        # Build Online Classes Section
+        online_section_html = ""
+        if online_only_classes:
+            online_section_html = "<div class='online-list'><strong>Online Classes:</strong> " + ", ".join(online_only_classes) + "</div>"
+
         final_html = f"""<!DOCTYPE html><html><head><style>
             body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
-            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 24px; margin-bottom: 50px; text-transform: uppercase; letter-spacing: 1.5px; }}
-            .calendar {{ display: grid; grid-template-columns: 50px repeat(4, 1fr); grid-template-rows: 35px repeat({total_slots}, 1fr); border: none; height: 850px; width: 100%; max-width: 800px; background: #fff; }}
+            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 24px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1.5px; }}
+            .calendar {{ display: grid; grid-template-columns: 60px repeat(5, 1fr); grid-template-rows: 35px repeat({total_slots}, 1fr); border: none; height: 750px; width: 100%; max-width: 850px; background: #fff; }}
             .header {{ background: #fff; color: #000; font-weight: bold; text-align: center; padding-top: 5px; font-size: 16px; border-bottom: 1px solid #ccc; }}
             .time-label {{ grid-column: 1; font-size: 10px; color: #444; text-align: right; padding-right: 12px; transform: translateY(-50%); }}
-            .grid-line {{ grid-column: 2 / span 4; border-top: 1px solid #eee; height: 0; }}
-            .event {{ margin: 1px; padding: 4px; font-size: 11px; border-radius: 0px; overflow: hidden; z-index: 2; line-height: 1.2; print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
-            @media print {{ @page {{ margin: 0.5in; }} body {{ padding: 0; margin: 0; justify-content: flex-start; }} h1 {{ font-size: 20px; margin-bottom: 40px; }} .calendar {{ background-image: none !important; border: none !important; height: auto; min-height: 700px; transform: scale(0.9); transform-origin: top center; }} .grid-line {{ border-top: 1px solid #ddd !important; }} * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }} }}
-        </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div>{html_times}{html_events}</div></body></html>"""
+            .grid-line {{ grid-column: 2 / span 5; border-top: 1px solid #eee; height: 0; }}
+            .event {{ margin: 1px; padding: 4px; font-size: 11px; border-radius: 0px; overflow: hidden; z-index: 2; line-height: 1.2; print-color-adjust: exact; }}
+            .online-list {{ margin-top: 30px; width: 100%; max-width: 850px; font-size: 14px; border-top: 2px solid #eee; padding-top: 10px; text-align: center; }}
+            @media print {{ @page {{ margin: 0.5in; }} .calendar {{ height: auto; min-height: 600px; }} }}
+        </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div><div class="header">Fri</div>{html_times}{html_events}</div>{online_section_html}</body></html>"""
         
         st.success("✅ Door Sign Generated!")
         st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
+
 
 # ==========================================
 # TOOL 3: FACULTY ASSIGNMENT SHEET HELPER
