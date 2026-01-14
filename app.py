@@ -21,23 +21,22 @@ tool_choice = st.sidebar.radio("Select Tool:",
 if tool_choice == "📅 Syllabus Schedule":
     st.header("Syllabus Schedule Generator")
     
-    # Separated Instructions
+    # Updated Instructions
     st.markdown("### 🛠 Instructions")
     col_inst1, col_inst2 = st.columns(2)
     
     with col_inst1:
-        st.write("**1. Get your .ics File from Canvas:**")
+        st.write("**1. Get your .ics File:**")
         st.caption("""
-            * Click the **Calendar icon** on the left navigation in Canvas.
-            * On the right-hand sidebar (under the list of calendars), click **Calendar Feed**.
-            * Copy the URL provided and paste it into a new browser tab to download the `.ics` file, or right-click and 'Save Link As'.
+            * **From Canvas:** Click the **Calendar icon** on the left navigation. On the right-hand sidebar, click **Calendar Feed**. Copy that URL and paste it into a new tab to download the file.
+            * **From Other Apps:** You can also upload an `.ics` file from **Google Calendar**, Outlook, or Apple Calendar.
         """)
 
     with col_inst2:
         st.write("**2. Generate & Paste:**")
         st.caption("""
             * Upload the file below.
-            * Select the specific class you want to generate for from the dropdown that appears.
+            * If multiple classes are found, select the specific class from the dropdown menu that appears.
             * Copy the HTML code and paste it into the **Simple Syllabus** HTML/code field (< >).
         """)
 
@@ -48,7 +47,7 @@ if tool_choice == "📅 Syllabus Schedule":
         start_date = st.date_input("First Day of Semester", value=datetime(2026, 1, 12))
         class_format = st.selectbox("Format", ["In-Person", "Hybrid", "Online"])
     with col2:
-        uploaded_file = st.file_uploader("Upload your .ics file here", type="ics", key="syl_upload")
+        uploaded_file = st.file_uploader("Upload your .ics file from Canvas or any calendar app (Google, etc.) here", type="ics", key="syl_upload")
 
     if uploaded_file:
         c = Calendar(uploaded_file.read().decode("utf-8"))
