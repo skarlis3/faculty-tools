@@ -12,8 +12,9 @@ st.title("🎓 Faculty Tools")
 st.markdown("Tools to automate your syllabus, door signs, calendar dates, and assignment sheets.")
 
 # --- SIDEBAR NAVIGATION ---
+# Added "📝 Text Date Shifter" to the list
 tool_choice = st.sidebar.radio("Select Tool:", 
-    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "📋 Assignment Sheet Filler", "⏳ ICS Date Shifter"])
+    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "📋 Assignment Sheet Filler", "⏳ ICS Date Shifter", "📝 Text Date Shifter"])
 
 # ==========================================
 # TOOL 1: SYLLABUS SCHEDULER
@@ -160,8 +161,8 @@ elif tool_choice == "🚪 Door Sign Generator":
                 if ev['name'] not in color_map: color_map[ev['name']] = random.choice(colors_cool)
                 bg, border = color_map[ev['name']], "#546e7a"
             else:
-                bg = "#fff8e1"  # A very light cream/yellow
-                border = "#d84315" # The dark orange/red left border
+                bg = "#fff8e1"
+                border = "#d84315"
             for d in ev['days']:
                 if d in col_map:
                     loc_html = f"<br>{ev['loc']}" if ev['loc'] else ""
@@ -173,67 +174,15 @@ elif tool_choice == "🚪 Door Sign Generator":
             label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
             html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
 
-        # --- UPDATED HTML: REMOVED BORDER, ADDED PADDING ---
         final_html = f"""<!DOCTYPE html><html><head><style>
             body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
-            h1 {{ 
-                text-align: center; 
-                color: #000; 
-                font-weight: normal; 
-                font-size: 24px; 
-                margin-bottom: 50px; /* Increased padding under title */
-                text-transform: uppercase; 
-                letter-spacing: 1.5px; 
-            }}
-            .calendar {{ 
-                display: grid; 
-                grid-template-columns: 50px repeat(4, 1fr); 
-                grid-template-rows: 35px repeat({total_slots}, 1fr); 
-                border: none; /* Removed schedule border */
-                height: 850px; 
-                width: 100%; 
-                max-width: 800px; 
-                background: #fff; 
-                background-image: linear-gradient(to right, transparent 50px, #eee 51px, transparent 51px, transparent calc(50px + 25%), #eee calc(50px + 25% + 1px), transparent calc(50px + 25% + 1px), transparent calc(50px + 50%), #eee calc(50px + 50% + 1px), transparent calc(50px + 50% + 1px), transparent calc(50px + 75%), #eee calc(50px + 75% + 1px), transparent calc(50px + 75% + 1px)); 
-            }}
-            .header {{ 
-                background: #fff; 
-                color: #000; 
-                font-weight: bold; 
-                text-align: center; 
-                padding-top: 5px; 
-                font-size: 16px; 
-                border-bottom: 1px solid #ccc; 
-            }}
+            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 24px; margin-bottom: 50px; text-transform: uppercase; letter-spacing: 1.5px; }}
+            .calendar {{ display: grid; grid-template-columns: 50px repeat(4, 1fr); grid-template-rows: 35px repeat({total_slots}, 1fr); border: none; height: 850px; width: 100%; max-width: 800px; background: #fff; }}
+            .header {{ background: #fff; color: #000; font-weight: bold; text-align: center; padding-top: 5px; font-size: 16px; border-bottom: 1px solid #ccc; }}
             .time-label {{ grid-column: 1; font-size: 10px; color: #444; text-align: right; padding-right: 12px; transform: translateY(-50%); }}
             .grid-line {{ grid-column: 2 / span 4; border-top: 1px solid #eee; height: 0; }}
-            .event {{ 
-                margin: 1px; 
-                padding: 4px; 
-                font-size: 11px; 
-                border-radius: 0px; 
-                overflow: hidden; 
-                z-index: 2; 
-                line-height: 1.2;
-                print-color-adjust: exact; 
-                -webkit-print-color-adjust: exact; 
-            }}
-            
-            @media print {{
-                @page {{ margin: 0.5in; }}
-                body {{ padding: 0; margin: 0; justify-content: flex-start; }}
-                h1 {{ font-size: 20px; margin-bottom: 40px; }}
-                .calendar {{ 
-                    background-image: none !important; 
-                    border: none !important; /* Force remove border for print */
-                    height: auto;
-                    min-height: 700px;
-                    transform: scale(0.9); 
-                    transform-origin: top center;
-                }}
-                .grid-line {{ border-top: 1px solid #ddd !important; }}
-                * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
-            }}
+            .event {{ margin: 1px; padding: 4px; font-size: 11px; border-radius: 0px; overflow: hidden; z-index: 2; line-height: 1.2; print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
+            @media print {{ @page {{ margin: 0.5in; }} body {{ padding: 0; margin: 0; justify-content: flex-start; }} h1 {{ font-size: 20px; margin-bottom: 40px; }} .calendar {{ background-image: none !important; border: none !important; height: auto; min-height: 700px; transform: scale(0.9); transform-origin: top center; }} .grid-line {{ border-top: 1px solid #ddd !important; }} * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }} }}
         </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div>{html_times}{html_events}</div></body></html>"""
         
         st.success("✅ Door Sign Generated!")
@@ -244,16 +193,10 @@ elif tool_choice == "🚪 Door Sign Generator":
 # ==========================================
 elif tool_choice == "📋 Assignment Sheet Filler":
     st.header("📋 Faculty Assignment Helper")
-    st.markdown("This version scans vertically to catch Remote/Online labels and Room numbers.")
-    
     with st.sidebar:
         default_type = st.selectbox("Default Contract Type", ["BASE", "EC", "XXC"])
     
-    messy_text = st.text_area(
-        "Paste Schedule Text:", 
-        height=300,
-        placeholder="ENGL-2740-H1602...\n(Wait for the green success message below)"
-    )
+    messy_text = st.text_area("Paste Schedule Text:", height=300)
 
     if st.button("Generate Spreadsheet Rows", type="primary"):
         if not messy_text:
@@ -294,7 +237,6 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                             if re.search(r'\bF\b', up_line): days_found.add("Fri")
 
                 is_remote = "REMOTE" in block.upper() or "ONLINE" in block.upper() or "ZOOM" in block.upper()
-                
                 room = ""
                 room_match = re.search(r'SOU-([A-Z]),\s*(\d+)', block)
                 if room_match:
@@ -303,8 +245,7 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                     room_alt = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', block)
                     room = room_alt.group(1) if room_alt else ""
                 
-                if is_remote:
-                    room = "Remote"
+                if is_remote: room = "Remote"
 
                 row = {
                     "Course Code /Section": class_name,
@@ -329,18 +270,14 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                 df = pd.DataFrame(rows, columns=cols)
                 st.success(f"Parsed {len(df)} classes.")
                 edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
-                
-                st.write("### Excel Output (Copy this)")
                 tsv = edited_df.to_csv(sep='\t', index=False, header=False)
                 st.code(tsv, language="text")
-            else:
-                st.error("No classes found. Ensure Course Codes are in the text.")
 
 # ==========================================
-# TOOL 4: DATE SHIFTER
+# TOOL 4: ICS DATE SHIFTER
 # ==========================================
 elif tool_choice == "⏳ ICS Date Shifter":
-    st.header("Class Date Shifter")
+    st.header("Class Date Shifter (ICS)")
     shift_file = st.file_uploader("Upload OLD .ics file", type="ics")
     new_start_date = st.date_input("New Start Date")
     
@@ -356,3 +293,49 @@ elif tool_choice == "⏳ ICS Date Shifter":
                     e.begin += timedelta(days=delta.days)
                     new_c.events.add(e)
                 st.download_button("Download ICS", str(new_c), "shifted.ics")
+
+# ==========================================
+# TOOL 5: TEXT DATE SHIFTER (NEW)
+# ==========================================
+elif tool_choice == "📝 Text Date Shifter":
+    st.header("📝 Text-Based Date Shifter")
+    st.markdown("Paste text containing dates (e.g., Week 1: Jan 12). This will find all dates and shift them.")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        days_to_shift = st.number_input("Days to shift (7 = 1 week)", value=0)
+    with col2:
+        date_format = st.selectbox("Output Format", ["Jan 12", "01/12", "January 12, 2026"])
+
+    old_text = st.text_area("Paste schedule text with dates here:", height=300, placeholder="Week 1: Jan 12\nWeek 2: Jan 19...")
+
+    if st.button("Shift Dates"):
+        if not old_text:
+            st.warning("Please paste some text first.")
+        else:
+            # Pattern to find common date formats: Jan 12, Jan. 12, 01/12, 1/12
+            # Does not capture year unless explicitly included
+            months = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
+            pattern = rf'((?:{months})\.?\s+\d{{1,2}}|\d{{1,2}}/\d{{1,2}})'
+            
+            def shift_match(match):
+                date_str = match.group(0)
+                try:
+                    # Try parsing Month Day
+                    if "/" in date_str:
+                        dt = datetime.strptime(f"{date_str}/2026", "%m/%d/%Y")
+                    else:
+                        clean_month = re.sub(r'\.', '', date_str)
+                        dt = datetime.strptime(f"{clean_month} 2026", "%b %d %Y")
+                    
+                    new_dt = dt + timedelta(days=days_to_shift)
+                    
+                    if date_format == "Jan 12": return new_dt.strftime("%b %d")
+                    if date_format == "01/12": return new_dt.strftime("%m/%d")
+                    return new_dt.strftime("%B %d, %Y")
+                except:
+                    return date_str # Return original if parsing fails
+
+            new_text = re.sub(pattern, shift_match, old_text, flags=re.IGNORECASE)
+            st.subheader("Shifted Result:")
+            st.text_area("Copy this back to your syllabus:", new_text, height=300)
