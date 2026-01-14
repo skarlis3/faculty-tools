@@ -11,6 +11,9 @@ st.set_page_config(page_title="Faculty Tools", page_icon="💻", layout="wide")
 st.title("🎓 Faculty Tools")
 st.markdown("Tools to automate your syllabus, door signs, calendar dates, and assignment sheets.")
 
+# Banner added as requested
+st.warning("⚠️ **Note:** These faculty tools are a work-in-progress.")
+
 # --- SIDEBAR NAVIGATION ---
 tool_choice = st.sidebar.radio("Select Tool:", 
     ["📅 Syllabus Schedule", "🚪 Door Sign Generator", "📋 Faculty Assignment Sheet Helper", "⏳ Date Shifter & Calculator"])
@@ -308,3 +311,7 @@ elif tool_choice == "⏳ Date Shifter & Calculator":
                     new_c.events.add(e)
                 st.success(f"Shifted by {final_shift} days.")
                 st.download_button("Download Shifted ICS", str(new_c), f"shifted_{final_shift}_days.ics")
+
+# Footer added as requested
+st.divider()
+st.caption("Contact Sarah Karlis with any questions or suggestions.")
