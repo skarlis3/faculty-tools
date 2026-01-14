@@ -1,4 +1,5 @@
 import streamlit as st
+import pd
 import pandas as pd
 from ics import Calendar
 from datetime import datetime, timedelta
@@ -11,7 +12,7 @@ st.set_page_config(page_title="Faculty Tools", page_icon="💻", layout="wide")
 st.title("🎓 Faculty Tools")
 st.markdown("Tools to automate your syllabus, door signs, calendar dates, and assignment sheets.")
 
-# Banner added as requested
+# Banner
 st.warning("⚠️ **Note:** These faculty tools are a work-in-progress. Double-check all output for accuracy.")
 
 # --- SIDEBAR NAVIGATION ---
@@ -24,7 +25,6 @@ tool_choice = st.sidebar.radio("Select Tool:",
 if tool_choice == "📅 Syllabus Schedule":
     st.header("Syllabus Schedule Generator")
     
-    # Updated Instructions
     st.markdown("### 🛠 Instructions")
     col_inst1, col_inst2 = st.columns(2)
     
@@ -56,13 +56,24 @@ if tool_choice == "📅 Syllabus Schedule":
         c = Calendar(uploaded_file.read().decode("utf-8"))
         all_events = list(c.events)
 
-        # Detect multiple classes
-        course_codes = sorted(list(set(re.findall(r'([A-Z]{3,4}\s*-\s*\d{4}|[A-Z]{3,4}\s+\d{4})', str(all_events)))))
+        # UPDATED REGEX: Captures "ENGL 1170 S1628" or "ENGL-1170-O0823"
+        course_pattern = r'([A-Z]{3,4}\s*[-]?\s*\d{4}(?:[\s-][A-Z0-9]{4,6})?)'
+        
+        found_codes = []
+        for e in all_events:
+            found_codes.extend(re.findall(course_pattern, e.name))
+            if e.description:
+                found_codes.extend(re.findall(course_pattern, e.description))
+        
+        course_codes = sorted(list(set(found_codes)))
         
         selected_course = None
         if len(course_codes) > 1:
-            st.info("💡 **Multiple classes found.** Please select the class you want to generate a schedule for below:")
-            selected_course = st.selectbox("Select Class:", course_codes)
+            st.info("💡 **Multiple sections/classes found.** Please select the specific section for this schedule:")
+            selected_course = st.selectbox("Select Class & Section:", course_codes)
+            filtered_events = [e for e in all_events if selected_course in e.name or (e.description and selected_course in e.description)]
+        elif len(course_codes) == 1:
+            selected_course = course_codes[0]
             filtered_events = [e for e in all_events if selected_course in e.name or (e.description and selected_course in e.description)]
         else:
             filtered_events = all_events
@@ -82,10 +93,8 @@ if tool_choice == "📅 Syllabus Schedule":
                 for week_start in sorted(events_by_week.keys()):
                     we = events_by_week[week_start]
                     is_break = any("break" in x.name.lower() or "holiday" in x.name.lower() for x in we)
-                    
                     calc_start = start_date.date() if hasattr(start_date, 'date') else start_date
                     week_num = ((week_start - calc_start).days // 7) + 1
-                    
                     label = f"🍂 Week {week_num} (Break)" if is_break else f"Week {week_num}: {week_start.strftime('%b %d')}"
                     
                     html_output.append(f"<div style='border:1px solid #ccc; padding:15px; margin-bottom:15px; border-radius:5px;'><h3>{label}</h3><ul>")
@@ -100,7 +109,6 @@ if tool_choice == "📅 Syllabus Schedule":
                     html_output.append(f"<div style='border-bottom:1px solid #eee; padding:10px;'><strong>{e.begin.format('ddd, MMM D')}:</strong> {display_name}</div>")
             
             html_output.append("</div>")
-            
             st.subheader(f"HTML Code for {selected_course if selected_course else 'Schedule'}")
             st.code("\n".join(html_output), language="html")
             st.download_button("Download HTML File", "\n".join(html_output), "syllabus_schedule.html", "text/html")
@@ -114,7 +122,7 @@ elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
     st.markdown("Generates a clean, print-friendly grid (Mon-Thu, 9am-8pm).")
 
-    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1190... SF-310")
+    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1190-S1628... SF-310")
     oh_text = st.text_input("2. Office Hours (e.g., 'Mon/Wed 11-12, Virtual: Tue 5-6'):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
@@ -143,9 +151,16 @@ elif tool_choice == "🚪 Door Sign Generator":
         for line in lines:
             line = line.strip()
             if not line: continue
-            if line.startswith("ENGL-"):
-                match = re.search(r'(ENGL-\d+)', line)
-                current_class = match.group(1).replace("-", " ") if match else "Class"
+            
+            # UPDATED: Capture Class + Section (e.g., ENGL 1170 S1628)
+            if "ENGL-" in line:
+                match = re.search(r'(ENGL-\d+-[A-Z0-9]+)', line)
+                if match:
+                    current_class = match.group(1).replace("-", " ")
+                else:
+                    # Fallback to just number if section missing
+                    match_simple = re.search(r'(ENGL-\d+)', line)
+                    current_class = match_simple.group(1).replace("-", " ") if match_simple else "Class"
             
             t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
             if t_match and current_class:
@@ -173,7 +188,7 @@ elif tool_choice == "🚪 Door Sign Generator":
 
         start_hr, end_hr = 9, 20
         total_slots = (end_hr - start_hr) * 4
-        colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5"]
+        colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5", "#fff3e0", "#f1f8e9"]
         color_map = {}
         html_events = ""
         col_map = {"M": 2, "T": 3, "W": 4, "Th": 5}
@@ -186,7 +201,7 @@ elif tool_choice == "🚪 Door Sign Generator":
             row_span = int((end_offset - start_offset) / 15)
             if row_span < 1: row_span = 1
             if ev['type'] == 'class':
-                if ev['name'] not in color_map: color_map[ev['name']] = random.choice(colors_cool)
+                if ev['name'] not in color_map: color_map[ev['name']] = colors_cool[len(color_map) % len(colors_cool)]
                 bg, border = color_map[ev['name']], "#546e7a"
             else:
                 bg, border = "#fff8e1", "#d84315"
@@ -312,6 +327,6 @@ elif tool_choice == "⏳ Date Shifter & Calculator":
                 st.success(f"Shifted by {final_shift} days.")
                 st.download_button("Download Shifted ICS", str(new_c), f"shifted_{final_shift}_days.ics")
 
-# Footer added as requested
+# Footer
 st.divider()
 st.caption("Contact Sarah Karlis with any questions or suggestions about these faculty tools.")
