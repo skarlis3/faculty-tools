@@ -203,7 +203,7 @@ elif tool_choice == "🚪 Door Sign Generator":
                     return h * 60 + m
                 s_min, e_min = parse_oh_time(time_parts[0]), parse_oh_time(time_parts[1])
                 if e_min <= s_min: e_min += 12 * 60
-                events.append({"type": "oh", "name": "Virtual OH" if is_virtual else "Office Hours", "days": found_days, "start": s_min, "end": e_min, "loc": ""})
+                events.append({"type": "oh", "name": "Virtual Office Hours" if is_virtual else "Office Hours", "days": found_days, "start": s_min, "end": e_min, "loc": ""})
 
         if events:
             all_times = [e['start'] for e in events] + [e['end'] for e in events]
