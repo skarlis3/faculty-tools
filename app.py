@@ -13,7 +13,7 @@ st.markdown("Tools to automate your syllabus, door signs, calendar dates, and as
 
 # --- SIDEBAR NAVIGATION ---
 tool_choice = st.sidebar.radio("Select Tool:", 
-    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "📋 Assignment Sheet Filler", "⏳ Date Shifter & Calculator"])
+    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "📋 Faculty Assignment Sheet Helper", "⏳ Date Shifter & Calculator"])
 
 # ==========================================
 # TOOL 1: SYLLABUS SCHEDULER
@@ -188,19 +188,32 @@ elif tool_choice == "🚪 Door Sign Generator":
         st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
 
 # ==========================================
-# TOOL 3: ASSIGNMENT SHEET FILLER
+# TOOL 3: FACULTY ASSIGNMENT SHEET HELPER
 # ==========================================
-elif tool_choice == "📋 Assignment Sheet Filler":
-    st.header("📋 Faculty Assignment Helper")
+elif tool_choice == "📋 Faculty Assignment Sheet Helper":
+    st.header("📋 Faculty Assignment Sheet Helper")
+    st.info("Instructions: Copy/paste your schedule directly from Self-Service below to generate a formatted table for your FAS.")
+    
     with st.sidebar:
         default_type = st.selectbox("Default Contract Type", ["BASE", "EC", "XXC"])
     
-    messy_text = st.text_area("Paste Schedule Text:", height=300)
+    messy_text = st.text_area("Paste Schedule Text from Self-Service:", height=300)
 
-    if st.button("Generate Spreadsheet Rows", type="primary"):
+    if st.button("Generate FAS Table Rows", type="primary"):
         if not messy_text:
             st.warning("Please paste some text first.")
         else:
+            # Hour Logic Mapping
+            hour_map = {
+                "1170": (1, 1, 2),
+                "1181": (4, 4, 5),
+                "1190": (4, 4, 5),
+                "1210": (3, 3, 4),
+                "1220": (3, 3, 4),
+                "1211": (3, 3, 4),
+                "1221": (3, 3, 4)
+            }
+
             course_pattern = r'([A-Z]{3,4}-\d{4}-[A-Z0-9]+)'
             starts = [m.start() for m in re.finditer(course_pattern, messy_text)]
             starts.append(len(messy_text)) 
@@ -213,12 +226,21 @@ elif tool_choice == "📋 Assignment Sheet Filler":
             for block in blocks:
                 name_match = re.search(course_pattern, block)
                 if not name_match: continue
-                class_name = name_match.group(1).replace("-", " ")
+                
+                full_code = name_match.group(1)
+                course_num = full_code.split('-')[1]
+                section_code = full_code.split('-')[2]
+                class_display_name = full_code.replace("-", " ")
 
+                # Hour Calculation
+                cr, cont, eq = hour_map.get(course_num, (3, 3, 3))
+
+                # Date Extraction
                 date_finds = re.findall(r'(\d{1,2}/\d{1,2}/\d{4})', block)
                 begin_date = date_finds[0] if date_finds else ""
                 end_date = date_finds[-1] if date_finds else ""
 
+                # Time and Days Extraction
                 t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', block, re.IGNORECASE)
                 time_str = t_match.group(1).upper() if t_match else ""
                 
@@ -235,20 +257,37 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                             if re.search(r'\bR\b', up_line) or "TH" in up_line: days_found.add("Thu")
                             if re.search(r'\bF\b', up_line): days_found.add("Fri")
 
-                is_remote = "REMOTE" in block.upper() or "ONLINE" in block.upper() or "ZOOM" in block.upper()
-                room = ""
-                room_match = re.search(r'SOU-([A-Z]),\s*(\d+)', block)
-                if room_match:
-                    room = f"S{room_match.group(1)}-{room_match.group(2)}"
-                else:
-                    room_alt = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', block)
-                    room = room_alt.group(1) if room_alt else ""
+                # Room and Modality Logic
+                is_hybrid = section_code.startswith("H")
+                has_remote_label = "REMOTE" in block.upper()
+                has_online_label = "ONLINE" in block.upper()
                 
-                if is_remote: room = "Remote"
+                # Look for a physical room (e.g. SOU-F, 310)
+                room_match = re.search(r'SOU-([A-Z]),\s*(\d+)', block)
+                physical_room = f"S{room_match.group(1)}-{room_match.group(2)}" if room_match else ""
+                
+                room_display = ""
+                online_section_val = ""
+
+                if is_hybrid:
+                    # For Hybrids, priority is physical room, then remote, else blank (online part)
+                    if physical_room:
+                        room_display = physical_room
+                    elif has_remote_label:
+                        room_display = "Remote"
+                else:
+                    # Not hybrid
+                    if physical_room:
+                        room_display = physical_room
+                    elif has_remote_label:
+                        room_display = "Remote"
+                    elif has_online_label and not time_str:
+                        # Strictly online: no room, no time
+                        online_section_val = "Yes"
 
                 row = {
-                    "Course Code /Section": class_name,
-                    "Cr Hrs": "", "Cont Hrs": "", "Eq Hrs": "", 
+                    "Course Code /Section": class_display_name,
+                    "Cr Hrs": cr, "Cont Hrs": cont, "Eq Hrs": eq, 
                     "Contract Type(s)": default_type,
                     "Combined With": "",
                     "Begin Date": begin_date,
@@ -259,8 +298,8 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                     "Thu": time_str if "Thu" in days_found else "",
                     "Fri": time_str if "Fri" in days_found else "",
                     "Sat": time_str if "Sat" in days_found else "",
-                    "Room": room,
-                    "Online Section": "Yes" if is_remote else ""
+                    "Room": room_display,
+                    "Online Section": online_section_val
                 }
                 rows.append(row)
 
@@ -270,6 +309,7 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                 st.success(f"Parsed {len(df)} classes.")
                 edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
                 tsv = edited_df.to_csv(sep='\t', index=False, header=False)
+                st.write("### Excel Copy Block")
                 st.code(tsv, language="text")
 
 # ==========================================
@@ -284,9 +324,9 @@ elif tool_choice == "⏳ Date Shifter & Calculator":
     
     calc_col1, calc_col2, calc_col3 = st.columns(3)
     with calc_col1:
-        old_ref_date = st.date_input("Old Reference Date (e.g., Old First Due Date)", value=datetime(2025, 8, 25))
+        old_ref_date = st.date_input("Old Reference Date", value=datetime(2025, 8, 25))
     with calc_col2:
-        new_ref_date = st.date_input("New Reference Date (e.g., New First Due Date)", value=datetime(2026, 1, 12))
+        new_ref_date = st.date_input("New Reference Date", value=datetime(2026, 1, 12))
     with calc_col3:
         canvas_adjustment = st.checkbox("Add +1 day for Canvas?", value=True)
 
@@ -300,7 +340,6 @@ elif tool_choice == "⏳ Date Shifter & Calculator":
 
     # --- ICS SHIFTER ---
     st.subheader("2. Apply to ICS File (Optional)")
-    st.markdown("If you have an `.ics` export, this will apply the calculated shift to every event in the file.")
     shift_file = st.file_uploader("Upload OLD .ics file", type="ics")
     
     if shift_file:
