@@ -20,10 +20,14 @@ tool_choice = st.sidebar.radio("Select Tool:",
 # ==========================================
 if tool_choice == "📅 Syllabus Schedule":
     st.header("Syllabus Schedule Generator")
+    
+    # Instructions for Simple Syllabus and Canvas Export
     st.info("""
-        **Simple Syllabus Helper:** Generate an accessible schedule. 
-        Once generated, copy the HTML code. In **Simple Syllabus**, select the **html/code icon** (< >) 
-        and paste the code directly.
+        **How to use this tool:**
+        1. **Upload an .ics file** from your calendar app below.
+        2. **If using Canvas:** Click the **Calendar icon** on the left navigation, then the **Calendar Feed** link on the bottom right (under the list of classes). Copy that URL or download the .ics file to upload here.
+        3. Once generated, copy the HTML code provided at the bottom.
+        4. In **Simple Syllabus**, select the **html/code icon** (< >) in the schedule field and paste the code.
     """)
     
     col1, col2 = st.columns(2)
@@ -31,27 +35,23 @@ if tool_choice == "📅 Syllabus Schedule":
         start_date = st.date_input("First Day of Semester", value=datetime(2026, 1, 12))
         class_format = st.selectbox("Format", ["In-Person", "Hybrid", "Online"])
     with col2:
-        uploaded_file = st.file_uploader("Upload .ics file (Canvas or Google)", type="ics", key="syl_upload")
+        uploaded_file = st.file_uploader("Upload .ics file here", type="ics", key="syl_upload")
 
     if uploaded_file:
         c = Calendar(uploaded_file.read().decode("utf-8"))
         all_events = list(c.events)
 
         # Logic to detect multiple classes (Common in Canvas exports)
-        # Matches patterns like ENGL-1190 or ENGL 1190
         course_codes = sorted(list(set(re.findall(r'([A-Z]{3,4}\s*-\s*\d{4}|[A-Z]{3,4}\s+\d{4})', str(all_events)))))
         
         selected_course = None
         if len(course_codes) > 1:
             st.warning(f"Multiple classes detected in this file ({len(course_codes)} total).")
             selected_course = st.selectbox("Select which class to generate for:", course_codes)
-            # Filter events to only those containing the course code
             filtered_events = [e for e in all_events if selected_course in e.name or (e.description and selected_course in e.description)]
         else:
-            # Single class (Google Calendar or specific export)
             filtered_events = all_events
 
-        # Sort and filter by start date
         events = sorted([e for e in filtered_events if e.begin.date() >= start_date], key=lambda x: x.begin)
 
         if events:
@@ -67,13 +67,12 @@ if tool_choice == "📅 Syllabus Schedule":
                 for week_start in sorted(events_by_week.keys()):
                     we = events_by_week[week_start]
                     is_break = any("break" in x.name.lower() or "holiday" in x.name.lower() for x in we)
-                    week_num = ((week_start - start_date.date() if isinstance(start_date, datetime) else start_date).days // 7) + 1
+                    week_num = ((week_start - (start_date.date() if isinstance(start_date, datetime) else start_date)).days // 7) + 1
                     
                     label = f"🍂 Week {week_num} (Break)" if is_break else f"Week {week_num}: {week_start.strftime('%b %d')}"
                     
                     html_output.append(f"<div style='border:1px solid #ccc; padding:15px; margin-bottom:15px; border-radius:5px;'><h3>{label}</h3><ul>")
                     for e in we:
-                        # Clean up course codes from name if we are filtering for one specific class
                         display_name = e.name.replace(selected_course, "").strip(": ") if selected_course else e.name
                         etype = "color:#900; font-weight:bold;" if "due" in display_name.lower() else "color:#333;"
                         html_output.append(f"<li style='{etype}'>{display_name}</li>")
@@ -253,15 +252,12 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 section_code = full_code.split('-')[2]
                 class_display_name = full_code.replace("-", " ")
 
-                # Hour Calculation
                 cr, cont, eq = hour_map.get(course_num, (3, 3, 3))
 
-                # Date Extraction
                 date_finds = re.findall(r'(\d{1,2}/\d{1,2}/\d{4})', block)
                 begin_date = date_finds[0] if date_finds else ""
                 end_date = date_finds[-1] if date_finds else ""
 
-                # Time and Days Extraction
                 t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', block, re.IGNORECASE)
                 time_str = t_match.group(1).upper() if t_match else ""
                 
@@ -278,12 +274,10 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                             if re.search(r'\bR\b', up_line) or "TH" in up_line: days_found.add("Thu")
                             if re.search(r'\bF\b', up_line): days_found.add("Fri")
 
-                # Room and Modality Logic
                 is_hybrid = section_code.startswith("H")
                 has_remote_label = "REMOTE" in block.upper()
                 has_online_label = "ONLINE" in block.upper()
                 
-                # Look for a physical room (e.g. SOU-F, 310)
                 room_match = re.search(r'SOU-([A-Z]),\s*(\d+)', block)
                 physical_room = f"S{room_match.group(1)}-{room_match.group(2)}" if room_match else ""
                 
@@ -291,17 +285,12 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 online_section_val = ""
 
                 if is_hybrid:
-                    if physical_room:
-                        room_display = physical_room
-                    elif has_remote_label:
-                        room_display = "Remote"
+                    if physical_room: room_display = physical_room
+                    elif has_remote_label: room_display = "Remote"
                 else:
-                    if physical_room:
-                        room_display = physical_room
-                    elif has_remote_label:
-                        room_display = "Remote"
-                    elif has_online_label and not time_str:
-                        online_section_val = "Yes"
+                    if physical_room: room_display = physical_room
+                    elif has_remote_label: room_display = "Remote"
+                    elif has_online_label and not time_str: online_section_val = "Yes"
 
                 row = {
                     "Course Code /Section": class_display_name,
@@ -325,9 +314,7 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 cols = ["Course Code /Section", "Cr Hrs", "Cont Hrs", "Eq Hrs", "Contract Type(s)", "Combined With", "Begin Date", "End Date", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Room", "Online Section"]
                 df = pd.DataFrame(rows, columns=cols)
                 st.success(f"Parsed {len(df)} classes.")
-                
                 edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
-                
                 tsv = edited_df.to_csv(sep='\t', index=False, header=False)
                 st.write("### Excel Copy Block")
                 st.code(tsv, language="text")
