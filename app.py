@@ -3,7 +3,6 @@ import pandas as pd
 from ics import Calendar
 from datetime import datetime, timedelta
 import re
-import random
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Faculty Tools", page_icon="💻", layout="wide")
@@ -49,13 +48,12 @@ if tool_choice == "📅 Syllabus Schedule":
         start_date = st.date_input("First Day of Semester", value=datetime(2026, 1, 12))
         class_format = st.selectbox("Format", ["In-Person", "Hybrid", "Online"])
     with col2:
-        uploaded_file = st.file_uploader("Upload your .ics file from Canvas or any calendar app (Google, etc.) here", type="ics", key="syl_upload")
+        uploaded_file = st.file_uploader("Upload your .ics file here", type="ics", key="syl_upload")
 
     if uploaded_file:
         c = Calendar(uploaded_file.read().decode("utf-8"))
         all_events = list(c.events)
 
-        # Regex captures: "ENGL 1170 S1628" or "ENGL-1170-O0823"
         course_pattern = r'([A-Z]{3,4}\s*[-]?\s*\d{4}(?:[\s-][A-Z0-9]{4,6})?)'
         
         found_codes = []
@@ -64,18 +62,16 @@ if tool_choice == "📅 Syllabus Schedule":
             if e.description:
                 found_codes.extend(re.findall(course_pattern, e.description))
         
-        # DEDUPLICATION LOGIC:
-        # Keeps the most specific version (e.g., keeps "ENGL 1170 S1628" and removes "ENGL 1170")
         unique_raw = sorted(list(set(found_codes)), key=len, reverse=True)
         course_codes = []
         for code in unique_raw:
             if not any(code in longer_code for longer_code in course_codes):
                 course_codes.append(code)
-        course_codes.sort() # Alphabetical for dropdown
+        course_codes.sort()
         
         selected_course = None
         if len(course_codes) > 1:
-            st.info("💡 **Multiple sections/classes found.** Please select the specific section for this schedule:")
+            st.info("💡 **Multiple sections/classes found.** Please select the specific section:")
             selected_course = st.selectbox("Select Class & Section:", course_codes)
             filtered_events = [e for e in all_events if selected_course in e.name or (e.description and selected_course in e.description)]
         elif len(course_codes) == 1:
@@ -126,10 +122,10 @@ if tool_choice == "📅 Syllabus Schedule":
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
-    st.markdown("Generates a print-friendly grid. Now includes Fridays and dynamic hour scaling.")
+    st.markdown("Generates a clean grid. Logic: Sections starting with **O** are listed at bottom; **H** or **S** are on the grid.")
 
-    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="2026 Winter Term\nENGL-1181-O0812\nENGL-1190-H1234\nMW 9:00 AM - 10:30 AM...")
-    oh_text = st.text_input("2. Office Hours (e.g., 'Mon/Wed 11-12, Fri 9-10'):")
+    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="ENGL-1181-O0812\nENGL-1190-S1628\nMW 9:00 AM - 10:30 AM")
+    oh_text = st.text_input("2. Office Hours (e.g., 'Mon/Wed 11-2, Fri 9-10'):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
     if st.button("Generate Door Sign"):
@@ -154,11 +150,9 @@ elif tool_choice == "🚪 Door Sign Generator":
         events = []
         online_only_classes = []
         lines = raw_schedule.split('\n')
-        
-        # Step 1: Parse the text into distinct class blocks or lines
         current_class_name = None
         current_section = None
-        
+
         for line in lines:
             line = line.strip()
             if not line: continue
@@ -169,25 +163,18 @@ elif tool_choice == "🚪 Door Sign Generator":
                 current_class_name = f"ENGL {class_match.group(1)}"
                 current_section = class_match.group(2)
                 full_code = f"{current_class_name} {current_section}"
-                
-                # Check if it's an Online class (Starts with O)
-                # We flag it. If no time is found in subsequent lines for this class, it stays online.
-                if current_section.startswith('O'):
-                    if full_code not in online_only_classes:
-                        online_only_classes.append(full_code)
+                if current_section.startswith('O') and full_code not in online_only_classes:
+                    online_only_classes.append(full_code)
 
             # Look for Time/Day pattern
             t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
             if t_match and current_class_name:
-                # If we found a time, and it was previously in the online_only list (because of section O), 
-                # remove it from online_only because it actually has a meeting time (like a Hybrid or Sync class)
                 full_code = f"{current_class_name} {current_section}"
                 if full_code in online_only_classes:
                     online_only_classes.remove(full_code)
                 
                 days_list = []
                 raw_days = t_match.group(1)
-                # Map standard abbreviations to our col_map keys
                 if 'M' in raw_days: days_list.append('M')
                 if 'T' in raw_days: days_list.append('T')
                 if 'W' in raw_days: days_list.append('W')
@@ -198,76 +185,61 @@ elif tool_choice == "🚪 Door Sign Generator":
                 room_num = room_match.group(1) if room_match else ""
                 loc = "Remote" if ("Remote" in line or "remote" in line) else (room_num if room_num else "")
                 
-                events.append({
-                    "type": "class", 
-                    "name": full_code, 
-                    "days": days_list, 
-                    "start": get_minutes(t_match.group(2)), 
-                    "end": get_minutes(t_match.group(3)), 
-                    "loc": loc
-                })
+                events.append({"type": "class", "name": full_code, "days": days_list, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
-       # Step 2: Parse Office Hours (Improved AM/PM logic)
+        # Parse Office Hours with crossover fix
         day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th', 'Fri': 'F'}
         for part in oh_text.split(','):
             part = part.strip()
             if not part: continue
             is_virtual = "virtual" in part.lower()
             found_days = [dcode for dname, dcode in day_map.items() if dname in part or dname.lower() in part.lower()]
-            
-            # Find all numbers (e.g., "11", "2" or "11:30", "1")
             time_parts = re.findall(r'(\d{1,2}(?::\d{2})?)', part)
-            
             if len(time_parts) >= 2:
-                def parse_oh_time(t_str, is_end_time=False, start_mins=None):
-                    if ':' in t_str:
-                        h, m = map(int, t_str.split(':'))
-                    else:
-                        h, m = int(t_str), 0
-                    
-                    # Logic: If h is 1-7, it's definitely PM. 
-                    # If h is 8-11, it's likely AM unless it's the end time 
-                    # and the start time was already in the afternoon.
-                    if 1 <= h <= 7: 
-                        h += 12
-                    elif 8 <= h <= 11:
-                        # If this is the end time (like 11-1), and 11 is the start, it's AM.
-                        # But if the start was 10 AM and end is 11, it's still AM.
-                        pass 
-                    elif h == 12:
-                        pass # 12 is 12
-                    
+                def parse_oh_time(t_str):
+                    h, m = (map(int, t_str.split(':')) if ':' in t_str else (int(t_str), 0))
+                    if 1 <= h <= 7: h += 12
                     return h * 60 + m
-
                 s_min = parse_oh_time(time_parts[0])
-                e_min = parse_oh_time(time_parts[1], is_end_time=True, start_mins=s_min)
-                
-                # Final safety check: if end is before start, add 12 hours to end
-                if e_min <= s_min:
-                    e_min += 12 * 60
-                
+                e_min = parse_oh_time(time_parts[1])
+                if e_min <= s_min: e_min += 12 * 60
                 name_label = "Virtual Office Hours" if is_virtual else "Office Hours"
                 events.append({"type": "oh", "name": name_label, "days": found_days, "start": s_min, "end": e_min, "loc": ""})
 
-        # Step 3: Determine Dynamic Hour Range
+        # Dynamic Hour Range
         if events:
-            all_starts = [e['start'] for e in events]
-            all_ends = [e['end'] for e in events]
-            
-            # Use floor/ceiling to get clean hour marks
-            start_hr = max(0, (min(all_starts) // 60) - 1) 
-            end_hr = min(23, (max(all_ends) // 60) + 1)
-            
-            # Ensure we show at least a standard workday if the span is tiny
-            if end_hr - start_hr < 4:
-                end_hr = min(23, start_hr + 6)
+            all_times = [e['start'] for e in events] + [e['end'] for e in events]
+            start_hr = max(0, (min(all_times) // 60) - 1)
+            end_hr = min(23, (max(all_times) // 60) + 1)
         else:
             start_hr, end_hr = 9, 17
 
-        # Build Online Classes Section
-        online_section_html = ""
-        if online_only_classes:
-            online_section_html = "<div class='online-list'><strong>Online Classes:</strong> " + ", ".join(online_only_classes) + "</div>"
+        total_slots = (end_hr - start_hr) * 4
+        colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5", "#fff3e0", "#f1f8e9"]
+        color_map, html_events = {}, ""
+        col_map = {"M": 2, "T": 3, "W": 4, "Th": 5, "F": 6}
+        
+        for ev in events:
+            start_offset, end_offset = ev['start'] - (start_hr * 60), ev['end'] - (start_hr * 60)
+            row_start, row_span = int(start_offset / 15) + 2, int((end_offset - start_offset) / 15)
+            if row_span < 1: row_span = 1
+            if ev['type'] == 'class':
+                if ev['name'] not in color_map: color_map[ev['name']] = colors_cool[len(color_map) % len(colors_cool)]
+                bg, border = color_map[ev['name']], "#546e7a"
+            else:
+                bg, border = "#fff8e1", "#d84315"
+            for d in ev['days']:
+                if d in col_map:
+                    loc_html = f"<br>{ev['loc']}" if ev['loc'] else ""
+                    html_events += f"""<div class="event" style="grid-column: {col_map[d]}; grid-row: {row_start} / span {row_span}; background: {bg}; border-left: 4px solid {border}; color: #000;"><strong>{ev['name']}</strong>{loc_html}</div>"""
+        
+        html_times = ""
+        for h in range(start_hr, end_hr + 1):
+            r = (h - start_hr) * 4 + 2
+            label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
+            html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
+
+        online_section_html = f"<div style='margin-top:30px; width:100%; max-width:850px; border-top:2px solid #eee; padding-top:10px; text-align:center;'><strong>Online Classes:</strong> {', '.join(online_only_classes)}</div>" if online_only_classes else ""
 
         final_html = f"""<!DOCTYPE html><html><head><style>
             body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
@@ -276,22 +248,18 @@ elif tool_choice == "🚪 Door Sign Generator":
             .header {{ background: #fff; color: #000; font-weight: bold; text-align: center; padding-top: 5px; font-size: 16px; border-bottom: 1px solid #ccc; }}
             .time-label {{ grid-column: 1; font-size: 10px; color: #444; text-align: right; padding-right: 12px; transform: translateY(-50%); }}
             .grid-line {{ grid-column: 2 / span 5; border-top: 1px solid #eee; height: 0; }}
-            .event {{ margin: 1px; padding: 4px; font-size: 11px; border-radius: 0px; overflow: hidden; z-index: 2; line-height: 1.2; print-color-adjust: exact; }}
-            .online-list {{ margin-top: 30px; width: 100%; max-width: 850px; font-size: 14px; border-top: 2px solid #eee; padding-top: 10px; text-align: center; }}
-            @media print {{ @page {{ margin: 0.5in; }} .calendar {{ height: auto; min-height: 600px; }} }}
+            .event {{ margin: 1px; padding: 4px; font-size: 11px; border-radius: 0px; overflow: hidden; z-index: 2; line-height: 1.2; print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
+            @media print {{ @page {{ margin: 0.5in; }} body {{ padding: 0; }} .calendar {{ height: auto; min-height: 600px; }} }}
         </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div><div class="header">Fri</div>{html_times}{html_events}</div>{online_section_html}</body></html>"""
         
         st.success("✅ Door Sign Generated!")
         st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
-
 
 # ==========================================
 # TOOL 3: FACULTY ASSIGNMENT SHEET HELPER
 # ==========================================
 elif tool_choice == "📋 Faculty Assignment Sheet Helper":
     st.header("📋 Faculty Assignment Sheet Helper")
-    st.info("Instructions: Copy/paste your schedule directly from Self-Service below. Select 'BASE' or 'EC' for each row, then copy the result.")
-    
     messy_text = st.text_area("Paste Schedule Text from Self-Service:", height=300)
 
     if st.button("Generate FAS Table Rows", type="primary"):
@@ -349,7 +317,6 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 st.success(f"Parsed {len(df)} classes.")
                 edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
                 tsv = edited_df.to_csv(sep='\t', index=False, header=False)
-                st.write("### Excel Copy Block")
                 st.code(tsv, language="text")
 
 # ==========================================
@@ -357,31 +324,26 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
 # ==========================================
 elif tool_choice == "⏳ Date Shifter & Calculator":
     st.header("⏳ Date Shift Calculator & Shifter")
-    st.subheader("1. Calculate Your Offset")
     calc_col1, calc_col2, calc_col3 = st.columns(3)
     with calc_col1: old_ref_date = st.date_input("Old Reference Date", value=datetime(2025, 8, 25))
     with calc_col2: new_ref_date = st.date_input("New Reference Date", value=datetime(2026, 1, 12))
     with calc_col3: canvas_adjustment = st.checkbox("Add +1 day for Canvas?", value=True)
     raw_delta = (new_ref_date - old_ref_date).days
     final_shift = raw_delta + 1 if canvas_adjustment else raw_delta
-    st.metric("Total Days to Shift", f"{final_shift} days", delta=f"{raw_delta} raw + {'1 canvas' if canvas_adjustment else '0'}")
+    st.metric("Total Days to Shift", f"{final_shift} days")
     st.divider()
-    st.subheader("2. Apply to ICS File (Optional)")
     shift_file = st.file_uploader("Upload OLD .ics file", type="ics")
     if shift_file:
         c = Calendar(shift_file.read().decode("utf-8"))
         events = sorted(list(c.events), key=lambda x: x.begin)
         if events:
-            st.write(f"Parsed {len(events)} events.")
             if st.button(f"Generate New ICS with +{final_shift} Day Shift"):
                 new_c = Calendar()
                 for e in events:
                     e.begin += timedelta(days=final_shift)
                     e.end += timedelta(days=final_shift)
                     new_c.events.add(e)
-                st.success(f"Shifted by {final_shift} days.")
                 st.download_button("Download Shifted ICS", str(new_c), f"shifted_{final_shift}_days.ics")
 
-# Footer
 st.divider()
-st.caption("Contact Sarah Karlis with any questions or suggestions about these faculty tools.")
+st.caption("Contact Sarah Karlis with any questions or suggestions.")
