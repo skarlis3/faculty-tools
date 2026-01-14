@@ -29,15 +29,14 @@ if tool_choice == "📅 Syllabus Schedule":
     with col_inst1:
         st.write("**1. Get your .ics File:**")
         st.caption("""
-            * **From Canvas:** Click the **Calendar icon** on the left navigation. On the right-hand sidebar, click **Calendar Feed**. Then click the words **Click to view Calendar Feed** in the pop-up window.
-            * **From Other Apps:** You can also upload an `.ics` file from **Google Calendar**, Outlook, or Apple Calendar.
+            * **From Canvas:** Click the **Calendar icon** on the left navigation. On the right-hand sidebar, click **Calendar Feed**. 
+            * **From Other Apps:** Upload an `.ics` file from Google, Outlook, or Apple Calendar.
         """)
 
     with col_inst2:
         st.write("**2. Generate & Paste:**")
         st.caption("""
-            * Upload the file below.
-            * If you uploaded a Canvas .ics file, select the specific class from the dropdown menu that appears.
+            * Select the specific class from the dropdown menu.
             * Copy the HTML code and paste it into the **Simple Syllabus** HTML/code field (< >).
         """)
 
@@ -53,7 +52,6 @@ if tool_choice == "📅 Syllabus Schedule":
     if uploaded_file:
         c = Calendar(uploaded_file.read().decode("utf-8"))
         all_events = list(c.events)
-
         course_pattern = r'([A-Z]{3,4}\s*[-]?\s*\d{4}(?:[\s-][A-Z0-9]{4,6})?)'
         
         found_codes = []
@@ -71,7 +69,7 @@ if tool_choice == "📅 Syllabus Schedule":
         
         selected_course = None
         if len(course_codes) > 1:
-            st.info("💡 **Multiple sections/classes found.** Please select the specific section:")
+            st.info("💡 Multiple sections found. Please select:")
             selected_course = st.selectbox("Select Class & Section:", course_codes)
             filtered_events = [e for e in all_events if selected_course in e.name or (e.description and selected_course in e.description)]
         elif len(course_codes) == 1:
@@ -84,21 +82,18 @@ if tool_choice == "📅 Syllabus Schedule":
 
         if events:
             html_output = ["<div style='font-family: sans-serif; max-width: 800px; margin: 0 auto;'>"]
-            
             if class_format in ["Hybrid", "Online"]:
                 events_by_week = {}
                 for e in events:
                     monday = e.begin.date() - timedelta(days=e.begin.date().weekday())
                     if monday not in events_by_week: events_by_week[monday] = []
                     events_by_week[monday].append(e)
-                
                 for week_start in sorted(events_by_week.keys()):
                     we = events_by_week[week_start]
                     is_break = any("break" in x.name.lower() or "holiday" in x.name.lower() for x in we)
                     calc_start = start_date.date() if hasattr(start_date, 'date') else start_date
                     week_num = ((week_start - calc_start).days // 7) + 1
                     label = f"🍂 Week {week_num} (Break)" if is_break else f"Week {week_num}: {week_start.strftime('%b %d')}"
-                    
                     html_output.append(f"<div style='border:1px solid #ccc; padding:15px; margin-bottom:15px; border-radius:5px;'><h3>{label}</h3><ul>")
                     for e in we:
                         display_name = e.name.replace(selected_course, "").strip(": ") if selected_course else e.name
@@ -109,23 +104,19 @@ if tool_choice == "📅 Syllabus Schedule":
                 for e in events:
                     display_name = e.name.replace(selected_course, "").strip(": ") if selected_course else e.name
                     html_output.append(f"<div style='border-bottom:1px solid #eee; padding:10px;'><strong>{e.begin.format('ddd, MMM D')}:</strong> {display_name}</div>")
-            
             html_output.append("</div>")
-            st.subheader(f"HTML Code for {selected_course if selected_course else 'Schedule'}")
             st.code("\n".join(html_output), language="html")
-            st.download_button("Download HTML File", "\n".join(html_output), "syllabus_schedule.html", "text/html")
-        else:
-            st.error("No events found after the selected start date.")
+            st.download_button("Download HTML", "\n".join(html_output), "schedule.html", "text/html")
 
 # ==========================================
-# TOOL 2: DOOR SIGN GENERATOR (UPDATED)
+# TOOL 2: DOOR SIGN GENERATOR
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
-    st.markdown("Generates a clean grid. Logic: Sections starting with **O** are listed at bottom; **H** or **S** are on the grid.")
+    st.markdown("Supports day ranges (e.g., **M-Th 10-12**) and dynamic hour ranges.")
 
-    raw_schedule = st.text_area("1. Paste Class Schedule (from software):", height=150, placeholder="ENGL-1181-O0812\nENGL-1190-S1628\nMW 9:00 AM - 10:30 AM")
-    oh_text = st.text_input("2. Office Hours (e.g., 'Mon/Wed 11-2, Fri 9-10'):")
+    raw_schedule = st.text_area("1. Paste Class Schedule:", height=150, placeholder="ENGL-1181-O0812\nENGL-1190-S1628\nMW 9:00 AM - 10:30 AM")
+    oh_text = st.text_input("2. Office Hours (e.g., 'M-Th 11-2, Fri 9-10'):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
     if st.button("Generate Door Sign"):
@@ -150,14 +141,11 @@ elif tool_choice == "🚪 Door Sign Generator":
         events = []
         online_only_classes = []
         lines = raw_schedule.split('\n')
-        current_class_name = None
-        current_section = None
+        current_class_name, current_section = None, None
 
         for line in lines:
             line = line.strip()
             if not line: continue
-            
-            # Identify Class + Section
             class_match = re.search(r'ENGL[- ](\d+)[- ]([A-Z0-9]+)', line)
             if class_match:
                 current_class_name = f"ENGL {class_match.group(1)}"
@@ -166,184 +154,153 @@ elif tool_choice == "🚪 Door Sign Generator":
                 if current_section.startswith('O') and full_code not in online_only_classes:
                     online_only_classes.append(full_code)
 
-            # Look for Time/Day pattern
             t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
             if t_match and current_class_name:
                 full_code = f"{current_class_name} {current_section}"
-                if full_code in online_only_classes:
-                    online_only_classes.remove(full_code)
-                
+                if full_code in online_only_classes: online_only_classes.remove(full_code)
                 days_list = []
                 raw_days = t_match.group(1)
-                if 'M' in raw_days: days_list.append('M')
-                if 'T' in raw_days: days_list.append('T')
-                if 'W' in raw_days: days_list.append('W')
-                if 'R' in raw_days or 'TH' in raw_days.upper(): days_list.append('Th')
-                if 'F' in raw_days: days_list.append('F')
-                
+                for char, code in zip(['M','T','W','R','F'],['M','T','W','Th','F']):
+                    if char in raw_days: days_list.append(code)
                 room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
-                room_num = room_match.group(1) if room_match else ""
-                loc = "Remote" if ("Remote" in line or "remote" in line) else (room_num if room_num else "")
-                
+                loc = "Remote" if "remote" in line.lower() else (room_match.group(1) if room_match else "")
                 events.append({"type": "class", "name": full_code, "days": days_list, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
-        # Parse Office Hours with crossover fix
-        day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th', 'Fri': 'F'}
+        # OFFICE HOUR RANGE PARSER
+        day_map_list = ['M', 'T', 'W', 'Th', 'F']
+        day_name_to_idx = {'MON':0, 'M':0, 'TUE':1, 'T':1, 'WED':2, 'W':2, 'THU':3, 'TH':3, 'R':3, 'FRI':4, 'F':4}
+
         for part in oh_text.split(','):
             part = part.strip()
             if not part: continue
             is_virtual = "virtual" in part.lower()
-            found_days = [dcode for dname, dcode in day_map.items() if dname in part or dname.lower() in part.lower()]
+            
+            # Look for Day Range like M-Th
+            range_match = re.search(r'([A-Za-z]+)\s*-\s*([A-Za-z]+)', part)
+            found_days = []
+            if range_match:
+                start_day_idx = day_name_to_idx.get(range_match.group(1).upper())
+                end_day_idx = day_name_to_idx.get(range_match.group(2).upper())
+                if start_day_idx is not None and end_day_idx is not None:
+                    found_days = day_map_list[start_day_idx : end_day_idx + 1]
+            else:
+                # Fallback to individual days
+                for dname, dcode in day_name_to_idx.items():
+                    if dname in part.upper(): 
+                        if day_map_list[dcode] not in found_days:
+                            found_days.append(day_map_list[dcode])
+
             time_parts = re.findall(r'(\d{1,2}(?::\d{2})?)', part)
             if len(time_parts) >= 2:
                 def parse_oh_time(t_str):
                     h, m = (map(int, t_str.split(':')) if ':' in t_str else (int(t_str), 0))
                     if 1 <= h <= 7: h += 12
                     return h * 60 + m
-                s_min = parse_oh_time(time_parts[0])
-                e_min = parse_oh_time(time_parts[1])
+                s_min, e_min = parse_oh_time(time_parts[0]), parse_oh_time(time_parts[1])
                 if e_min <= s_min: e_min += 12 * 60
-                name_label = "Virtual Office Hours" if is_virtual else "Office Hours"
-                events.append({"type": "oh", "name": name_label, "days": found_days, "start": s_min, "end": e_min, "loc": ""})
+                events.append({"type": "oh", "name": "Virtual OH" if is_virtual else "Office Hours", "days": found_days, "start": s_min, "end": e_min, "loc": ""})
 
-        # Dynamic Hour Range
         if events:
             all_times = [e['start'] for e in events] + [e['end'] for e in events]
-            start_hr = max(0, (min(all_times) // 60) - 1)
-            end_hr = min(23, (max(all_times) // 60) + 1)
+            start_hr, end_hr = max(0, (min(all_times)//60)-1), min(23, (max(all_times)//60)+1)
         else:
             start_hr, end_hr = 9, 17
 
-        total_slots = (end_hr - start_hr) * 4
+        total_slots, html_events = (end_hr - start_hr) * 4, ""
         colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5", "#fff3e0", "#f1f8e9"]
-        color_map, html_events = {}, ""
-        col_map = {"M": 2, "T": 3, "W": 4, "Th": 5, "F": 6}
+        color_map, col_map = {}, {"M": 2, "T": 3, "W": 4, "Th": 5, "F": 6}
         
         for ev in events:
-            start_offset, end_offset = ev['start'] - (start_hr * 60), ev['end'] - (start_hr * 60)
-            row_start, row_span = int(start_offset / 15) + 2, int((end_offset - start_offset) / 15)
-            if row_span < 1: row_span = 1
-            if ev['type'] == 'class':
-                if ev['name'] not in color_map: color_map[ev['name']] = colors_cool[len(color_map) % len(colors_cool)]
-                bg, border = color_map[ev['name']], "#546e7a"
-            else:
-                bg, border = "#fff8e1", "#d84315"
+            start_off, end_off = ev['start'] - (start_hr * 60), ev['end'] - (start_hr * 60)
+            row_s, row_span = int(start_off/15)+2, max(1, int((end_off-start_off)/15))
+            bg, border = ("#fff8e1", "#d84315") if ev['type'] == 'oh' else (color_map.setdefault(ev['name'], colors_cool[len(color_map)%len(colors_cool)]), "#546e7a")
             for d in ev['days']:
                 if d in col_map:
-                    loc_html = f"<br>{ev['loc']}" if ev['loc'] else ""
-                    html_events += f"""<div class="event" style="grid-column: {col_map[d]}; grid-row: {row_start} / span {row_span}; background: {bg}; border-left: 4px solid {border}; color: #000;"><strong>{ev['name']}</strong>{loc_html}</div>"""
+                    loc_h = f"<br>{ev['loc']}" if ev['loc'] else ""
+                    html_events += f'<div class="event" style="grid-column:{col_map[d]}; grid-row:{row_s}/span {row_span}; background:{bg}; border-left:4px solid {border}; color:#000;"><strong>{ev['name']}</strong>{loc_h}</div>'
         
         html_times = ""
         for h in range(start_hr, end_hr + 1):
             r = (h - start_hr) * 4 + 2
-            label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
-            html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
+            html_times += f'<div class="time-label" style="grid-row:{r};">{h%12 or 12} {"AM" if h<12 else "PM"}</div><div class="grid-line" style="grid-row:{r};"></div>'
 
-        online_section_html = f"<div style='margin-top:30px; width:100%; max-width:850px; border-top:2px solid #eee; padding-top:10px; text-align:center;'><strong>Online Classes:</strong> {', '.join(online_only_classes)}</div>" if online_only_classes else ""
-
+        online_h = f"<div style='margin-top:30px; border-top:2px solid #eee; padding-top:10px;'><strong>Online:</strong> {', '.join(online_only_classes)}</div>" if online_only_classes else ""
         final_html = f"""<!DOCTYPE html><html><head><style>
-            body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
-            h1 {{ text-align: center; color: #000; font-weight: normal; font-size: 24px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1.5px; }}
-            .calendar {{ display: grid; grid-template-columns: 60px repeat(5, 1fr); grid-template-rows: 35px repeat({total_slots}, 1fr); border: none; height: 750px; width: 100%; max-width: 850px; background: #fff; }}
-            .header {{ background: #fff; color: #000; font-weight: bold; text-align: center; padding-top: 5px; font-size: 16px; border-bottom: 1px solid #ccc; }}
-            .time-label {{ grid-column: 1; font-size: 10px; color: #444; text-align: right; padding-right: 12px; transform: translateY(-50%); }}
-            .grid-line {{ grid-column: 2 / span 5; border-top: 1px solid #eee; height: 0; }}
-            .event {{ margin: 1px; padding: 4px; font-size: 11px; border-radius: 0px; overflow: hidden; z-index: 2; line-height: 1.2; print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
-            @media print {{ @page {{ margin: 0.5in; }} body {{ padding: 0; }} .calendar {{ height: auto; min-height: 600px; }} }}
-        </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div><div class="header">Fri</div>{html_times}{html_events}</div>{online_section_html}</body></html>"""
-        
+            body {{ font-family: 'Segoe UI', sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
+            .calendar {{ display: grid; grid-template-columns: 60px repeat(5, 1fr); grid-template-rows: 35px repeat({total_slots}, 1fr); width: 100%; max-width: 850px; border: none; }}
+            .header {{ font-weight: bold; text-align: center; border-bottom: 1px solid #ccc; }}
+            .time-label {{ font-size: 10px; color: #444; text-align: right; padding-right: 12px; transform: translateY(-50%); }}
+            .grid-line {{ grid-column: 2 / span 5; border-top: 1px solid #eee; }}
+            .event {{ margin: 1px; padding: 4px; font-size: 11px; border-radius: 0px; line-height: 1.2; print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
+            @media print {{ @page {{ margin: 0.5in; }} .calendar {{ height: auto; }} }}
+        </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div><div class="header">Fri</div>{html_times}{html_events}</div>{online_h}</body></html>"""
         st.success("✅ Door Sign Generated!")
-        st.download_button("Download Door Sign HTML", data=final_html, file_name="door_sign.html", mime="text/html")
+        st.download_button("Download HTML", data=final_html, file_name="door_sign.html", mime="text/html")
 
 # ==========================================
 # TOOL 3: FACULTY ASSIGNMENT SHEET HELPER
 # ==========================================
 elif tool_choice == "📋 Faculty Assignment Sheet Helper":
     st.header("📋 Faculty Assignment Sheet Helper")
-    messy_text = st.text_area("Paste Schedule Text from Self-Service:", height=300)
-
+    messy_text = st.text_area("Paste Schedule from Self-Service:", height=300)
     if st.button("Generate FAS Table Rows", type="primary"):
         if not messy_text:
-            st.warning("Please paste some text first.")
+            st.warning("Please paste some text.")
         else:
-            hour_map = {"1170": (1, 1, 2), "1181": (4, 4, 5), "1190": (4, 4, 5), "1210": (3, 3, 4), "1220": (3, 3, 4), "1211": (3, 3, 4), "1221": (3, 3, 4)}
+            hour_map = {"1170": (1,1,2), "1181": (4,4,5), "1190": (4,4,5), "1210": (3,3,4), "1220": (3,3,4), "1211": (3,3,4), "1221": (3,3,4)}
             course_pattern = r'([A-Z]{3,4}-\d{4}-[A-Z0-9]+)'
-            starts = [m.start() for m in re.finditer(course_pattern, messy_text)]
-            starts.append(len(messy_text)) 
+            starts = [m.start() for m in re.finditer(course_pattern, messy_text)] + [len(messy_text)]
             blocks = [messy_text[starts[i]:starts[i+1]] for i in range(len(starts)-1)]
-
             rows = []
             for block in blocks:
                 name_match = re.search(course_pattern, block)
                 if not name_match: continue
-                full_code = name_match.group(1)
-                course_num, section_code = full_code.split('-')[1], full_code.split('-')[2]
-                cr, cont, eq = hour_map.get(course_num, (3, 3, 3))
+                f_code = name_match.group(1)
+                c_num, s_code = f_code.split('-')[1], f_code.split('-')[2]
+                cr, cont, eq = hour_map.get(c_num, (3,3,3))
                 date_finds = re.findall(r'(\d{1,2}/\d{1,2}/\d{4})', block)
-                begin_date, end_date = (date_finds[0] if date_finds else ""), (date_finds[-1] if date_finds else "")
-                t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', block, re.IGNORECASE)
-                time_str = t_match.group(1).upper() if t_match else ""
-                days_found = set()
+                b_date, e_date = (date_finds[0] if date_finds else ""), (date_finds[-1] if date_finds else "")
+                t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', block, re.I)
+                time_s, days_f = (t_match.group(1).upper() if t_match else ""), set()
                 if t_match:
-                    for line in block.split('\n'):
-                        if t_match.group(0) in line:
-                            up_line = line.upper()
-                            if "M/W" in up_line or "MW" in up_line: days_found.update(["Mon", "Wed"])
-                            if "T/TH" in up_line or "TTH" in up_line or "T/R" in up_line: days_found.update(["Tue", "Thu"])
-                            if re.search(r'\bM\b', up_line): days_found.add("Mon")
-                            if re.search(r'\bT\b', up_line): days_found.add("Tue")
-                            if re.search(r'\bW\b', up_line): days_found.add("Wed")
-                            if re.search(r'\bR\b', up_line) or "TH" in up_line: days_found.add("Thu")
-                            if re.search(r'\bF\b', up_line): days_found.add("Fri")
-
-                is_hybrid = section_code.startswith("H")
-                has_remote_label, has_online_label = "REMOTE" in block.upper(), "ONLINE" in block.upper()
-                room_match = re.search(r'SOU-([A-Z]),\s*(\d+)', block)
-                physical_room = f"S{room_match.group(1)}-{room_match.group(2)}" if room_match else ""
-                room_display, online_section_val = "", ""
-
-                if is_hybrid:
-                    room_display = physical_room if physical_room else ("Remote" if has_remote_label else "")
-                else:
-                    if physical_room: room_display = physical_room
-                    elif has_remote_label: room_display = "Remote"
-                    elif has_online_label and not time_str: online_section_val = "Yes"
-
-                rows.append({"Course Code /Section": full_code.replace("-", " "), "Cr Hrs": cr, "Cont Hrs": cont, "Eq Hrs": eq, "Contract Type(s)": "", "Combined With": "", "Begin Date": begin_date, "End Date": end_date, "Mon": time_str if "Mon" in days_found else "", "Tue": time_str if "Tue" in days_found else "", "Wed": time_str if "Wed" in days_found else "", "Thu": time_str if "Thu" in days_found else "", "Fri": time_str if "Fri" in days_found else "", "Sat": time_str if "Sat" in days_found else "", "Room": room_display, "Online Section": online_section_val})
-
+                    up_block = block.upper()
+                    if "M/W" in up_block or "MW" in up_block: days_f.update(["Mon","Wed"])
+                    if "T/TH" in up_block or "TTH" in up_block or "T/R" in up_block: days_f.update(["Tue","Thu"])
+                    if re.search(r'\bM\b', up_block): days_f.add("Mon")
+                    if re.search(r'\bT\b', up_block): days_f.add("Tue")
+                    if re.search(r'\bW\b', up_block): days_f.add("Wed")
+                    if re.search(r'\bR\b', up_block) or "TH" in up_block: days_f.add("Thu")
+                    if re.search(r'\bF\b', up_block): days_f.add("Fri")
+                physical = f"S{re.search(r'SOU-([A-Z]),\s*(\d+)', block).group(1)}-{re.search(r'SOU-([A-Z]),\s*(\d+)', block).group(2)}" if re.search(r'SOU-([A-Z]),\s*(\d+)', block) else ""
+                room_d = physical if physical else ("Remote" if "REMOTE" in block.upper() else "")
+                rows.append({"Course Code /Section": f_code.replace("-"," "), "Cr Hrs": cr, "Cont Hrs": cont, "Eq Hrs": eq, "Begin Date": b_date, "End Date": e_date, "Mon": time_s if "Mon" in days_f else "", "Tue": time_s if "Tue" in days_f else "", "Wed": time_s if "Wed" in days_f else "", "Thu": time_s if "Thu" in days_f else "", "Fri": time_s if "Fri" in days_f else "", "Room": room_d, "Online": ("Yes" if "ONLINE" in block.upper() and not time_s else "")})
             if rows:
-                cols = ["Course Code /Section", "Cr Hrs", "Cont Hrs", "Eq Hrs", "Contract Type(s)", "Combined With", "Begin Date", "End Date", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Room", "Online Section"]
-                df = pd.DataFrame(rows, columns=cols)
-                st.success(f"Parsed {len(df)} classes.")
+                df = pd.DataFrame(rows)
                 edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
-                tsv = edited_df.to_csv(sep='\t', index=False, header=False)
-                st.code(tsv, language="text")
+                st.code(edited_df.to_csv(sep='\t', index=False, header=False), language="text")
 
 # ==========================================
 # TOOL 4: DATE SHIFTER & CALCULATOR
 # ==========================================
 elif tool_choice == "⏳ Date Shifter & Calculator":
-    st.header("⏳ Date Shift Calculator & Shifter")
+    st.header("⏳ Date Shift Calculator")
     calc_col1, calc_col2, calc_col3 = st.columns(3)
-    with calc_col1: old_ref_date = st.date_input("Old Reference Date", value=datetime(2025, 8, 25))
-    with calc_col2: new_ref_date = st.date_input("New Reference Date", value=datetime(2026, 1, 12))
-    with calc_col3: canvas_adjustment = st.checkbox("Add +1 day for Canvas?", value=True)
-    raw_delta = (new_ref_date - old_ref_date).days
-    final_shift = raw_delta + 1 if canvas_adjustment else raw_delta
-    st.metric("Total Days to Shift", f"{final_shift} days")
+    with calc_col1: old_ref = st.date_input("Old Ref Date", value=datetime(2025, 8, 25))
+    with calc_col2: new_ref = st.date_input("New Ref Date", value=datetime(2026, 1, 12))
+    with calc_col3: canvas_adj = st.checkbox("Add +1 day for Canvas?", value=True)
+    f_shift = (new_ref - old_ref).days + (1 if canvas_adj else 0)
+    st.metric("Total Days to Shift", f"{f_shift} days")
     st.divider()
     shift_file = st.file_uploader("Upload OLD .ics file", type="ics")
     if shift_file:
         c = Calendar(shift_file.read().decode("utf-8"))
-        events = sorted(list(c.events), key=lambda x: x.begin)
-        if events:
-            if st.button(f"Generate New ICS with +{final_shift} Day Shift"):
-                new_c = Calendar()
-                for e in events:
-                    e.begin += timedelta(days=final_shift)
-                    e.end += timedelta(days=final_shift)
-                    new_c.events.add(e)
-                st.download_button("Download Shifted ICS", str(new_c), f"shifted_{final_shift}_days.ics")
+        if st.button(f"Generate Shifted ICS (+{f_shift})"):
+            new_c = Calendar()
+            for e in c.events:
+                e.begin += timedelta(days=f_shift)
+                e.end += timedelta(days=f_shift)
+                new_c.events.add(e)
+            st.download_button("Download Shifted ICS", str(new_c), "shifted.ics")
 
 st.divider()
-st.caption("Contact Sarah Karlis with any questions or suggestions.")
+st.caption("Contact Sarah Karlis with any questions.")
