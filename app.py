@@ -113,9 +113,9 @@ if tool_choice == "📅 Syllabus Schedule":
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
-    st.markdown("Copy your schedule from self-service and paste it below. Day ranges (e.g., **M-Th**) and Online/Hybrid detection are supported.")
+    st.markdown("Copy your schedule from self-service and paste it below. Office hours will automatically be labeled in full for student clarity.")
 
-    raw_schedule = st.text_area("1. Paste Class Schedule:", height=150, placeholder="ENGL-1181-O0812\nENGL-1190-S1628\nMW 9:00 AM - 10:30 AM")
+    raw_schedule = st.text_area("1. Paste Class Schedule:", height=150, placeholder="ENGL-1181-O0812\n8/19/25-10/15/25\nENGL-1190-S1628\nMW 9:00 AM - 10:30 AM")
     oh_text = st.text_input("2. Office Hours (e.g., 'M-Th 11-1, Fri 9-10' or Mon/Wed 10-12, Virtual Mon-Tue 5-6):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
@@ -138,26 +138,42 @@ elif tool_choice == "🚪 Door Sign Generator":
                 return h * 60 + m
             except: return 0
 
+        months = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        
         events = []
-        online_only_classes = []
+        online_data = {} # full_code -> month_string
         lines = raw_schedule.split('\n')
         current_class_name, current_section = None, None
 
         for line in lines:
             line = line.strip()
             if not line: continue
+            
+            # Identify Class + Section
             class_match = re.search(r'ENGL[- ](\d+)[- ]([A-Z0-9]+)', line)
             if class_match:
                 current_class_name = f"ENGL {class_match.group(1)}"
                 current_section = class_match.group(2)
                 full_code = f"{current_class_name} {current_section}"
-                if current_section.startswith('O') and full_code not in online_only_classes:
-                    online_only_classes.append(full_code)
+                if current_section.startswith('O'):
+                    if full_code not in online_data:
+                        online_data[full_code] = ""
 
+            # Look for Start Date (e.g. 8/19/25)
+            date_match = re.search(r'(\d{1,2})/\d{1,2}/\d{2,4}', line)
+            if date_match and current_class_name:
+                full_code = f"{current_class_name} {current_section}"
+                if full_code in online_data:
+                    m_idx = int(date_match.group(1))
+                    online_data[full_code] = f" ({months[m_idx]} start)"
+
+            # Look for Time/Day pattern (for Hybrid/In-Person)
             t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
             if t_match and current_class_name:
                 full_code = f"{current_class_name} {current_section}"
-                if full_code in online_only_classes: online_only_classes.remove(full_code)
+                # If it has a time, it's not "Online Only" for the bottom list
+                if full_code in online_data: del online_data[full_code]
+                
                 days_list = []
                 raw_days = t_match.group(1)
                 for char, code in zip(['M','T','W','R','F'],['M','T','W','Th','F']):
@@ -166,7 +182,7 @@ elif tool_choice == "🚪 Door Sign Generator":
                 loc = "Remote" if "remote" in line.lower() else (room_match.group(1) if room_match else "")
                 events.append({"type": "class", "name": full_code, "days": days_list, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
-        # OFFICE HOUR RANGE PARSER (Corrected for "Virtual" matching)
+        # OFFICE HOUR RANGE PARSER
         day_map_list = ['M', 'T', 'W', 'Th', 'F']
         day_name_to_idx = {'MON':0, 'M':0, 'TUE':1, 'T':1, 'WED':2, 'W':2, 'THU':3, 'TH':3, 'R':3, 'FRI':4, 'F':4}
 
@@ -174,12 +190,8 @@ elif tool_choice == "🚪 Door Sign Generator":
             part = part.strip()
             if not part: continue
             is_virtual = "virtual" in part.lower()
-            
-            # Create a clean version of the string for day-matching only
-            # This prevents the letters in "Virtual" from being counted as days
             search_string = part.upper().replace("VIRTUAL", "")
             
-            # Look for Day Range like M-Th
             range_match = re.search(r'([A-Z]+)\s*-\s*([A-Z]+)', search_string)
             found_days = []
             if range_match:
@@ -188,9 +200,7 @@ elif tool_choice == "🚪 Door Sign Generator":
                 if start_day_idx is not None and end_day_idx is not None:
                     found_days = day_map_list[start_day_idx : end_day_idx + 1]
             else:
-                # Fallback to individual days (using word boundaries or specific checks)
                 for dname, dcode in day_name_to_idx.items():
-                    # We use a simple "in" check on our cleaned string
                     if dname in search_string: 
                         if day_map_list[dcode] not in found_days:
                             found_days.append(day_map_list[dcode])
@@ -229,7 +239,9 @@ elif tool_choice == "🚪 Door Sign Generator":
             r = (h - start_hr) * 4 + 2
             html_times += f'<div class="time-label" style="grid-row:{r};">{h%12 or 12} {"AM" if h<12 else "PM"}</div><div class="grid-line" style="grid-row:{r};"></div>'
 
-        online_h = f"<div style='margin-top:30px; border-top:2px solid #eee; padding-top:10px; width:100%; max-width:850px; text-align:center;'><strong>Online Classes (No Meeting Time):</strong><br>{', '.join(online_only_classes)}</div>" if online_only_classes else ""
+        online_list = [f"{k}{v}" for k, v in online_data.items()]
+        online_h = f"<div style='margin-top:30px; border-top:2px solid #eee; padding-top:10px; width:100%; max-width:850px; text-align:center;'><strong>Online Classes:</strong><br>{', '.join(online_list)}</div>" if online_list else ""
+        
         final_html = f"""<!DOCTYPE html><html><head><style>
             body {{ font-family: 'Segoe UI', sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
             h1 {{ text-align: center; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px; }}
@@ -266,7 +278,7 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 cr, cont, eq = hour_map.get(c_num, (3,3,3))
                 date_finds = re.findall(r'(\d{1,2}/\d{1,2}/\d{4})', block)
                 b_date, e_date = (date_finds[0] if date_finds else ""), (date_finds[-1] if date_finds else "")
-                t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', block, re.I)
+                t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d.2\s*[AP]M)', block, re.I)
                 time_s, days_f = (t_match.group(1).upper() if t_match else ""), set()
                 if t_match:
                     up_block = block.upper()
