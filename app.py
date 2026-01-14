@@ -12,9 +12,8 @@ st.title("🎓 Faculty Tools")
 st.markdown("Tools to automate your syllabus, door signs, calendar dates, and assignment sheets.")
 
 # --- SIDEBAR NAVIGATION ---
-# Added "📝 Text Date Shifter" to the list
 tool_choice = st.sidebar.radio("Select Tool:", 
-    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "📋 Assignment Sheet Filler", "⏳ ICS Date Shifter", "📝 Text Date Shifter"])
+    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "📋 Assignment Sheet Filler", "⏳ Date Shifter & Calculator"])
 
 # ==========================================
 # TOOL 1: SYLLABUS SCHEDULER
@@ -274,68 +273,48 @@ elif tool_choice == "📋 Assignment Sheet Filler":
                 st.code(tsv, language="text")
 
 # ==========================================
-# TOOL 4: ICS DATE SHIFTER
+# TOOL 4: DATE SHIFTER & CALCULATOR
 # ==========================================
-elif tool_choice == "⏳ ICS Date Shifter":
-    st.header("Class Date Shifter (ICS)")
+elif tool_choice == "⏳ Date Shifter & Calculator":
+    st.header("⏳ Date Shift Calculator & Shifter")
+    
+    # --- OFFSET CALCULATOR ---
+    st.subheader("1. Calculate Your Offset")
+    st.info("Input two dates to find the gap. Perfect for finding the exact number of days between semesters.")
+    
+    calc_col1, calc_col2, calc_col3 = st.columns(3)
+    with calc_col1:
+        old_ref_date = st.date_input("Old Reference Date (e.g., Old First Due Date)", value=datetime(2025, 8, 25))
+    with calc_col2:
+        new_ref_date = st.date_input("New Reference Date (e.g., New First Due Date)", value=datetime(2026, 1, 12))
+    with calc_col3:
+        canvas_adjustment = st.checkbox("Add +1 day for Canvas?", value=True)
+
+    # Calculate raw delta
+    raw_delta = (new_ref_date - old_ref_date).days
+    final_shift = raw_delta + 1 if canvas_adjustment else raw_delta
+
+    st.metric("Total Days to Shift", f"{final_shift} days", delta=f"{raw_delta} raw + {'1 canvas' if canvas_adjustment else '0'}")
+    
+    st.divider()
+
+    # --- ICS SHIFTER ---
+    st.subheader("2. Apply to ICS File (Optional)")
+    st.markdown("If you have an `.ics` export, this will apply the calculated shift to every event in the file.")
     shift_file = st.file_uploader("Upload OLD .ics file", type="ics")
-    new_start_date = st.date_input("New Start Date")
     
     if shift_file:
         c = Calendar(shift_file.read().decode("utf-8"))
         events = sorted(list(c.events), key=lambda x: x.begin)
+        
         if events:
-            delta = new_start_date - events[0].begin.date()
-            if st.button(f"Shift by {delta.days} days"):
+            st.write(f"Parsed {len(events)} events from file.")
+            if st.button(f"Generate New ICS with +{final_shift} Day Shift"):
                 new_c = Calendar()
                 for e in events:
-                    e.end += timedelta(days=delta.days)
-                    e.begin += timedelta(days=delta.days)
+                    e.begin += timedelta(days=final_shift)
+                    e.end += timedelta(days=final_shift)
                     new_c.events.add(e)
-                st.download_button("Download ICS", str(new_c), "shifted.ics")
-
-# ==========================================
-# TOOL 5: TEXT DATE SHIFTER (NEW)
-# ==========================================
-elif tool_choice == "📝 Text Date Shifter":
-    st.header("📝 Text-Based Date Shifter")
-    st.markdown("Paste text containing dates (e.g., Week 1: Jan 12). This will find all dates and shift them.")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        days_to_shift = st.number_input("Days to shift (7 = 1 week)", value=0)
-    with col2:
-        date_format = st.selectbox("Output Format", ["Jan 12", "01/12", "January 12, 2026"])
-
-    old_text = st.text_area("Paste schedule text with dates here:", height=300, placeholder="Week 1: Jan 12\nWeek 2: Jan 19...")
-
-    if st.button("Shift Dates"):
-        if not old_text:
-            st.warning("Please paste some text first.")
-        else:
-            # Pattern to find common date formats: Jan 12, Jan. 12, 01/12, 1/12
-            # Does not capture year unless explicitly included
-            months = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
-            pattern = rf'((?:{months})\.?\s+\d{{1,2}}|\d{{1,2}}/\d{{1,2}})'
-            
-            def shift_match(match):
-                date_str = match.group(0)
-                try:
-                    # Try parsing Month Day
-                    if "/" in date_str:
-                        dt = datetime.strptime(f"{date_str}/2026", "%m/%d/%Y")
-                    else:
-                        clean_month = re.sub(r'\.', '', date_str)
-                        dt = datetime.strptime(f"{clean_month} 2026", "%b %d %Y")
-                    
-                    new_dt = dt + timedelta(days=days_to_shift)
-                    
-                    if date_format == "Jan 12": return new_dt.strftime("%b %d")
-                    if date_format == "01/12": return new_dt.strftime("%m/%d")
-                    return new_dt.strftime("%B %d, %Y")
-                except:
-                    return date_str # Return original if parsing fails
-
-            new_text = re.sub(pattern, shift_match, old_text, flags=re.IGNORECASE)
-            st.subheader("Shifted Result:")
-            st.text_area("Copy this back to your syllabus:", new_text, height=300)
+                
+                st.success(f"Shifted by {final_shift} days.")
+                st.download_button("Download Shifted ICS", str(new_c), f"shifted_{final_shift}_days.ics")
