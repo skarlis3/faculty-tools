@@ -21,58 +21,75 @@ tool_choice = st.sidebar.radio("Select Tool:",
 if tool_choice == "📅 Syllabus Schedule":
     st.header("Syllabus Schedule Generator")
     st.info("""
-        **Simple Syllabus Helper:** Use this tool to generate an accessible schedule for your syllabus. 
+        **Simple Syllabus Helper:** Generate an accessible schedule. 
         Once generated, copy the HTML code. In **Simple Syllabus**, select the **html/code icon** (< >) 
-        in the schedule field and paste the code directly there.
+        and paste the code directly.
     """)
     
     col1, col2 = st.columns(2)
     with col1:
         start_date = st.date_input("First Day of Semester", value=datetime(2026, 1, 12))
-        class_number = st.text_input("Class Number (e.g. 1190)", value="1190")
-    with col2:
         class_format = st.selectbox("Format", ["In-Person", "Hybrid", "Online"])
-        
-    st.write(" **Meeting Days (for In-Person/Hybrid):**")
-    cols = st.columns(5)
-    days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
-    valid_days = [i for i, d in enumerate(days) if cols[i].checkbox(d, value=(d=="Tue"))]
-
-    uploaded_file = st.file_uploader("Upload .ics file", type="ics", key="syl_upload")
+    with col2:
+        uploaded_file = st.file_uploader("Upload .ics file (Canvas or Google)", type="ics", key="syl_upload")
 
     if uploaded_file:
         c = Calendar(uploaded_file.read().decode("utf-8"))
-        events = sorted([e for e in c.events if e.begin.date() >= start_date], key=lambda x: x.begin)
+        all_events = list(c.events)
+
+        # Logic to detect multiple classes (Common in Canvas exports)
+        # Matches patterns like ENGL-1190 or ENGL 1190
+        course_codes = sorted(list(set(re.findall(r'([A-Z]{3,4}\s*-\s*\d{4}|[A-Z]{3,4}\s+\d{4})', str(all_events)))))
         
-        html_output = ["<div style='font-family: sans-serif; max-width: 800px; margin: 0 auto;'>"]
-        
-        if class_format in ["Hybrid", "Online"]:
-            events_by_week = {}
-            for e in events:
-                monday = e.begin.date() - timedelta(days=e.begin.date().weekday())
-                if monday not in events_by_week: events_by_week[monday] = []
-                events_by_week[monday].append(e)
-            
-            for week_start in sorted(events_by_week.keys()):
-                we = events_by_week[week_start]
-                is_break = any("spring break" in x.name.lower() for x in we)
-                week_num = ((week_start - start_date).days // 7) + 1
-                label = f"🍂 Week {week_num} (Break)" if is_break else f"Week {week_num}: {week_start.strftime('%b %d')}"
-                
-                html_output.append(f"<div style='border:1px solid #ccc; padding:15px; margin-bottom:15px; border-radius:5px;'><h3>{label}</h3><ul>")
-                for e in we:
-                    etype = "color:#900; font-weight:bold;" if "due" in e.name.lower() else "color:#333;"
-                    html_output.append(f"<li style='{etype}'>{e.name}</li>")
-                html_output.append("</ul></div>")
+        selected_course = None
+        if len(course_codes) > 1:
+            st.warning(f"Multiple classes detected in this file ({len(course_codes)} total).")
+            selected_course = st.selectbox("Select which class to generate for:", course_codes)
+            # Filter events to only those containing the course code
+            filtered_events = [e for e in all_events if selected_course in e.name or (e.description and selected_course in e.description)]
         else:
-            for e in events:
-                html_output.append(f"<div style='border-bottom:1px solid #eee; padding:10px;'><strong>{e.begin.format('ddd, MMM D')}:</strong> {e.name}</div>")
-        
-        html_output.append("</div>")
-        
-        st.subheader("HTML Code for Simple Syllabus")
-        st.code("\n".join(html_output), language="html")
-        st.download_button("Download HTML File", "\n".join(html_output), f"syllabus_{class_number}.html", "text/html")
+            # Single class (Google Calendar or specific export)
+            filtered_events = all_events
+
+        # Sort and filter by start date
+        events = sorted([e for e in filtered_events if e.begin.date() >= start_date], key=lambda x: x.begin)
+
+        if events:
+            html_output = ["<div style='font-family: sans-serif; max-width: 800px; margin: 0 auto;'>"]
+            
+            if class_format in ["Hybrid", "Online"]:
+                events_by_week = {}
+                for e in events:
+                    monday = e.begin.date() - timedelta(days=e.begin.date().weekday())
+                    if monday not in events_by_week: events_by_week[monday] = []
+                    events_by_week[monday].append(e)
+                
+                for week_start in sorted(events_by_week.keys()):
+                    we = events_by_week[week_start]
+                    is_break = any("break" in x.name.lower() or "holiday" in x.name.lower() for x in we)
+                    week_num = ((week_start - start_date.date() if isinstance(start_date, datetime) else start_date).days // 7) + 1
+                    
+                    label = f"🍂 Week {week_num} (Break)" if is_break else f"Week {week_num}: {week_start.strftime('%b %d')}"
+                    
+                    html_output.append(f"<div style='border:1px solid #ccc; padding:15px; margin-bottom:15px; border-radius:5px;'><h3>{label}</h3><ul>")
+                    for e in we:
+                        # Clean up course codes from name if we are filtering for one specific class
+                        display_name = e.name.replace(selected_course, "").strip(": ") if selected_course else e.name
+                        etype = "color:#900; font-weight:bold;" if "due" in display_name.lower() else "color:#333;"
+                        html_output.append(f"<li style='{etype}'>{display_name}</li>")
+                    html_output.append("</ul></div>")
+            else:
+                for e in events:
+                    display_name = e.name.replace(selected_course, "").strip(": ") if selected_course else e.name
+                    html_output.append(f"<div style='border-bottom:1px solid #eee; padding:10px;'><strong>{e.begin.format('ddd, MMM D')}:</strong> {display_name}</div>")
+            
+            html_output.append("</div>")
+            
+            st.subheader(f"HTML Code for {selected_course if selected_course else 'Schedule'}")
+            st.code("\n".join(html_output), language="html")
+            st.download_button("Download HTML File", "\n".join(html_output), "syllabus_schedule.html", "text/html")
+        else:
+            st.error("No events found after the selected start date.")
 
 # ==========================================
 # TOOL 2: DOOR SIGN GENERATOR
