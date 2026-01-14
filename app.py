@@ -12,7 +12,7 @@ st.title("🎓 Faculty Tools")
 st.markdown("Tools to automate your syllabus, door signs, calendar dates, and assignment sheets.")
 
 # Banner added as requested
-st.warning("⚠️ **Note:** These faculty tools are a work-in-progress.")
+st.warning("⚠️ **Note:** These faculty tools are a work-in-progress. Double-check all output for accuracy.")
 
 # --- SIDEBAR NAVIGATION ---
 tool_choice = st.sidebar.radio("Select Tool:", 
@@ -314,4 +314,4 @@ elif tool_choice == "⏳ Date Shifter & Calculator":
 
 # Footer added as requested
 st.divider()
-st.caption("Contact Sarah Karlis with any questions or suggestions.")
+st.caption("Contact Sarah Karlis with any questions or suggestions about these faculty tools.")
