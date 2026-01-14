@@ -1,5 +1,4 @@
 import streamlit as st
-import pd
 import pandas as pd
 from ics import Calendar
 from datetime import datetime, timedelta
