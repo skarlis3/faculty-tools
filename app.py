@@ -31,7 +31,7 @@ if tool_choice == "📅 Syllabus Schedule":
     with col_inst1:
         st.write("**1. Get your .ics File:**")
         st.caption("""
-            * **From Canvas:** Click the **Calendar icon** on the left navigation. On the right-hand sidebar, click **Calendar Feed**. Copy that URL and paste it into a new tab to download the file.
+            * **From Canvas:** Click the **Calendar icon** on the left navigation. On the right-hand sidebar, click **Calendar Feed**. Then click the words **Click to view Calendar Feed** in the pop-up window.
             * **From Other Apps:** You can also upload an `.ics` file from **Google Calendar**, Outlook, or Apple Calendar.
         """)
 
@@ -39,7 +39,7 @@ if tool_choice == "📅 Syllabus Schedule":
         st.write("**2. Generate & Paste:**")
         st.caption("""
             * Upload the file below.
-            * If multiple classes are found, select the specific class from the dropdown menu that appears.
+            * If you uploaded a Canvas .ics file, select the specific class from the dropdown menu that appears.
             * Copy the HTML code and paste it into the **Simple Syllabus** HTML/code field (< >).
         """)
 
