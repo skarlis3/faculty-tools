@@ -13,14 +13,18 @@ st.markdown("Tools to automate your syllabus, door signs, calendar dates, and as
 
 # --- SIDEBAR NAVIGATION ---
 tool_choice = st.sidebar.radio("Select Tool:", 
-    ["📅 Syllabus Scheduler", "🚪 Door Sign Generator", "📋 Faculty Assignment Sheet Helper", "⏳ Date Shifter & Calculator"])
+    ["📅 Syllabus Schedule", "🚪 Door Sign Generator", "📋 Faculty Assignment Sheet Helper", "⏳ Date Shifter & Calculator"])
 
 # ==========================================
-# TOOL 1: SYLLABUS SCHEDULER
+# TOOL 1: SYLLABUS SCHEDULE
 # ==========================================
-if tool_choice == "📅 Syllabus Scheduler":
+if tool_choice == "📅 Syllabus Schedule":
     st.header("Syllabus Schedule Generator")
-    st.info("Upload your Canvas .ics file to generate a clean HTML schedule.")
+    st.info("""
+        **Simple Syllabus Helper:** Use this tool to generate an accessible schedule for your syllabus. 
+        Once generated, copy the HTML code. In **Simple Syllabus**, select the **html/code icon** (< >) 
+        in the schedule field and paste the code directly there.
+    """)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -65,7 +69,10 @@ if tool_choice == "📅 Syllabus Scheduler":
                 html_output.append(f"<div style='border-bottom:1px solid #eee; padding:10px;'><strong>{e.begin.format('ddd, MMM D')}:</strong> {e.name}</div>")
         
         html_output.append("</div>")
-        st.download_button("Download HTML", "\n".join(html_output), f"syllabus_{class_number}.html", "text/html")
+        
+        st.subheader("HTML Code for Simple Syllabus")
+        st.code("\n".join(html_output), language="html")
+        st.download_button("Download HTML File", "\n".join(html_output), f"syllabus_{class_number}.html", "text/html")
 
 # ==========================================
 # TOOL 2: DOOR SIGN GENERATOR
@@ -282,7 +289,7 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 row = {
                     "Course Code /Section": class_display_name,
                     "Cr Hrs": cr, "Cont Hrs": cont, "Eq Hrs": eq, 
-                    "Contract Type(s)": "", # Left blank per request
+                    "Contract Type(s)": "", 
                     "Combined With": "",
                     "Begin Date": begin_date,
                     "End Date": end_date,
@@ -302,7 +309,6 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 df = pd.DataFrame(rows, columns=cols)
                 st.success(f"Parsed {len(df)} classes.")
                 
-                # Use Data Editor to allow user to choose BASE/EC before copying
                 edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
                 
                 tsv = edited_df.to_csv(sep='\t', index=False, header=False)
