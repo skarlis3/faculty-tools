@@ -192,10 +192,7 @@ elif tool_choice == "🚪 Door Sign Generator":
 # ==========================================
 elif tool_choice == "📋 Faculty Assignment Sheet Helper":
     st.header("📋 Faculty Assignment Sheet Helper")
-    st.info("Instructions: Copy/paste your schedule directly from Self-Service below to generate a formatted table for your FAS.")
-    
-    with st.sidebar:
-        default_type = st.selectbox("Default Contract Type", ["BASE", "EC", "XXC"])
+    st.info("Instructions: Copy/paste your schedule directly from Self-Service below. This tool will generate a table. Select 'BASE' or 'EC' for each row in the table, then copy the result for your FAS.")
     
     messy_text = st.text_area("Paste Schedule Text from Self-Service:", height=300)
 
@@ -270,25 +267,22 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 online_section_val = ""
 
                 if is_hybrid:
-                    # For Hybrids, priority is physical room, then remote, else blank (online part)
                     if physical_room:
                         room_display = physical_room
                     elif has_remote_label:
                         room_display = "Remote"
                 else:
-                    # Not hybrid
                     if physical_room:
                         room_display = physical_room
                     elif has_remote_label:
                         room_display = "Remote"
                     elif has_online_label and not time_str:
-                        # Strictly online: no room, no time
                         online_section_val = "Yes"
 
                 row = {
                     "Course Code /Section": class_display_name,
                     "Cr Hrs": cr, "Cont Hrs": cont, "Eq Hrs": eq, 
-                    "Contract Type(s)": default_type,
+                    "Contract Type(s)": "", # Left blank per request
                     "Combined With": "",
                     "Begin Date": begin_date,
                     "End Date": end_date,
@@ -307,7 +301,10 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 cols = ["Course Code /Section", "Cr Hrs", "Cont Hrs", "Eq Hrs", "Contract Type(s)", "Combined With", "Begin Date", "End Date", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Room", "Online Section"]
                 df = pd.DataFrame(rows, columns=cols)
                 st.success(f"Parsed {len(df)} classes.")
+                
+                # Use Data Editor to allow user to choose BASE/EC before copying
                 edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+                
                 tsv = edited_df.to_csv(sep='\t', index=False, header=False)
                 st.write("### Excel Copy Block")
                 st.code(tsv, language="text")
@@ -318,7 +315,6 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
 elif tool_choice == "⏳ Date Shifter & Calculator":
     st.header("⏳ Date Shift Calculator & Shifter")
     
-    # --- OFFSET CALCULATOR ---
     st.subheader("1. Calculate Your Offset")
     st.info("Input two dates to find the gap. Perfect for finding the exact number of days between semesters.")
     
@@ -330,7 +326,6 @@ elif tool_choice == "⏳ Date Shifter & Calculator":
     with calc_col3:
         canvas_adjustment = st.checkbox("Add +1 day for Canvas?", value=True)
 
-    # Calculate raw delta
     raw_delta = (new_ref_date - old_ref_date).days
     final_shift = raw_delta + 1 if canvas_adjustment else raw_delta
 
@@ -338,7 +333,6 @@ elif tool_choice == "⏳ Date Shifter & Calculator":
     
     st.divider()
 
-    # --- ICS SHIFTER ---
     st.subheader("2. Apply to ICS File (Optional)")
     shift_file = st.file_uploader("Upload OLD .ics file", type="ics")
     
