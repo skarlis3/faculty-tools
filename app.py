@@ -113,10 +113,10 @@ if tool_choice == "📅 Syllabus Schedule":
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
-    st.markdown("Copy your schedule from self-service and paste it below to generate a schedule for your door. Office hours can be added in the field below.")
+    st.markdown("Copy your schedule from self-service and paste it below. Day ranges (e.g., **M-Th**) and Online/Hybrid detection are supported.")
 
     raw_schedule = st.text_area("1. Paste Class Schedule:", height=150, placeholder="ENGL-1181-O0812\nENGL-1190-S1628\nMW 9:00 AM - 10:30 AM")
-    oh_text = st.text_input("2. Office Hours (e.g., 'M-Th 11-1, Fri 9-10' or Mon/Wed 10-12, Virtual: Mon-Tue 5-6):")
+    oh_text = st.text_input("2. Office Hours (e.g., 'M-Th 11-1, Fri 9-10' or Mon/Wed 10-12, Virtual Mon-Tue 5-6):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
     if st.button("Generate Door Sign"):
@@ -166,7 +166,7 @@ elif tool_choice == "🚪 Door Sign Generator":
                 loc = "Remote" if "remote" in line.lower() else (room_match.group(1) if room_match else "")
                 events.append({"type": "class", "name": full_code, "days": days_list, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
-        # OFFICE HOUR RANGE PARSER
+        # OFFICE HOUR RANGE PARSER (Corrected for "Virtual" matching)
         day_map_list = ['M', 'T', 'W', 'Th', 'F']
         day_name_to_idx = {'MON':0, 'M':0, 'TUE':1, 'T':1, 'WED':2, 'W':2, 'THU':3, 'TH':3, 'R':3, 'FRI':4, 'F':4}
 
@@ -175,18 +175,23 @@ elif tool_choice == "🚪 Door Sign Generator":
             if not part: continue
             is_virtual = "virtual" in part.lower()
             
+            # Create a clean version of the string for day-matching only
+            # This prevents the letters in "Virtual" from being counted as days
+            search_string = part.upper().replace("VIRTUAL", "")
+            
             # Look for Day Range like M-Th
-            range_match = re.search(r'([A-Za-z]+)\s*-\s*([A-Za-z]+)', part)
+            range_match = re.search(r'([A-Z]+)\s*-\s*([A-Z]+)', search_string)
             found_days = []
             if range_match:
-                start_day_idx = day_name_to_idx.get(range_match.group(1).upper())
-                end_day_idx = day_name_to_idx.get(range_match.group(2).upper())
+                start_day_idx = day_name_to_idx.get(range_match.group(1))
+                end_day_idx = day_name_to_idx.get(range_match.group(2))
                 if start_day_idx is not None and end_day_idx is not None:
                     found_days = day_map_list[start_day_idx : end_day_idx + 1]
             else:
-                # Fallback to individual days
+                # Fallback to individual days (using word boundaries or specific checks)
                 for dname, dcode in day_name_to_idx.items():
-                    if dname in part.upper(): 
+                    # We use a simple "in" check on our cleaned string
+                    if dname in search_string: 
                         if day_map_list[dcode] not in found_days:
                             found_days.append(day_map_list[dcode])
 
@@ -224,14 +229,15 @@ elif tool_choice == "🚪 Door Sign Generator":
             r = (h - start_hr) * 4 + 2
             html_times += f'<div class="time-label" style="grid-row:{r};">{h%12 or 12} {"AM" if h<12 else "PM"}</div><div class="grid-line" style="grid-row:{r};"></div>'
 
-        online_h = f"<div style='margin-top:30px; border-top:2px solid #eee; padding-top:10px;'><strong>Online:</strong> {', '.join(online_only_classes)}</div>" if online_only_classes else ""
+        online_h = f"<div style='margin-top:30px; border-top:2px solid #eee; padding-top:10px; width:100%; max-width:850px; text-align:center;'><strong>Online Classes (No Meeting Time):</strong><br>{', '.join(online_only_classes)}</div>" if online_only_classes else ""
         final_html = f"""<!DOCTYPE html><html><head><style>
             body {{ font-family: 'Segoe UI', sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
+            h1 {{ text-align: center; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px; }}
             .calendar {{ display: grid; grid-template-columns: 60px repeat(5, 1fr); grid-template-rows: 35px repeat({total_slots}, 1fr); width: 100%; max-width: 850px; border: none; }}
-            .header {{ font-weight: bold; text-align: center; border-bottom: 1px solid #ccc; }}
+            .header {{ font-weight: bold; text-align: center; border-bottom: 1px solid #ccc; font-size: 16px; padding-top: 5px; }}
             .time-label {{ font-size: 10px; color: #444; text-align: right; padding-right: 12px; transform: translateY(-50%); }}
-            .grid-line {{ grid-column: 2 / span 5; border-top: 1px solid #eee; }}
-            .event {{ margin: 1px; padding: 4px; font-size: 11px; border-radius: 0px; line-height: 1.2; print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
+            .grid-line {{ grid-column: 2 / span 5; border-top: 1px solid #eee; height: 0; }}
+            .event {{ margin: 1px; padding: 4px; font-size: 11px; border-radius: 0px; line-height: 1.2; print-color-adjust: exact; -webkit-print-color-adjust: exact; overflow: hidden; }}
             @media print {{ @page {{ margin: 0.5in; }} .calendar {{ height: auto; }} }}
         </style></head><body><h1>{title_text}</h1><div class="calendar"><div class="header" style="grid-column:1"></div><div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div><div class="header">Thu</div><div class="header">Fri</div>{html_times}{html_events}</div>{online_h}</body></html>"""
         st.success("✅ Door Sign Generated!")
