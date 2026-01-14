@@ -21,38 +21,51 @@ tool_choice = st.sidebar.radio("Select Tool:",
 if tool_choice == "📅 Syllabus Schedule":
     st.header("Syllabus Schedule Generator")
     
-    # Instructions for Simple Syllabus and Canvas Export
-    st.info("""
-        **How to use this tool:**
-        1. **Upload an .ics file** from your calendar app below.
-        2. **If using Canvas:** Click the **Calendar icon** on the left navigation, then the **Calendar Feed** link on the bottom right (under the list of classes). Copy that URL or download the .ics file to upload here.
-        3. Once generated, copy the HTML code provided at the bottom.
-        4. In **Simple Syllabus**, select the **html/code icon** (< >) in the schedule field and paste the code.
-    """)
+    # Separated Instructions
+    st.markdown("### 🛠 Instructions")
+    col_inst1, col_inst2 = st.columns(2)
+    
+    with col_inst1:
+        st.write("**1. Get your .ics File from Canvas:**")
+        st.caption("""
+            * Click the **Calendar icon** on the left navigation in Canvas.
+            * On the right-hand sidebar (under the list of calendars), click **Calendar Feed**.
+            * Copy the URL provided and paste it into a new browser tab to download the `.ics` file, or right-click and 'Save Link As'.
+        """)
+
+    with col_inst2:
+        st.write("**2. Generate & Paste:**")
+        st.caption("""
+            * Upload the file below.
+            * Select the specific class you want to generate for from the dropdown that appears.
+            * Copy the HTML code and paste it into the **Simple Syllabus** HTML/code field (< >).
+        """)
+
+    st.divider()
     
     col1, col2 = st.columns(2)
     with col1:
         start_date = st.date_input("First Day of Semester", value=datetime(2026, 1, 12))
         class_format = st.selectbox("Format", ["In-Person", "Hybrid", "Online"])
     with col2:
-        uploaded_file = st.file_uploader("Upload .ics file here", type="ics", key="syl_upload")
+        uploaded_file = st.file_uploader("Upload your .ics file here", type="ics", key="syl_upload")
 
     if uploaded_file:
         c = Calendar(uploaded_file.read().decode("utf-8"))
         all_events = list(c.events)
 
-        # Logic to detect multiple classes (Common in Canvas exports)
+        # Detect multiple classes
         course_codes = sorted(list(set(re.findall(r'([A-Z]{3,4}\s*-\s*\d{4}|[A-Z]{3,4}\s+\d{4})', str(all_events)))))
         
         selected_course = None
         if len(course_codes) > 1:
-            st.warning(f"Multiple classes detected in this file ({len(course_codes)} total).")
-            selected_course = st.selectbox("Select which class to generate for:", course_codes)
+            st.info("💡 **Multiple classes found.** Please select the class you want to generate a schedule for below:")
+            selected_course = st.selectbox("Select Class:", course_codes)
             filtered_events = [e for e in all_events if selected_course in e.name or (e.description and selected_course in e.description)]
         else:
             filtered_events = all_events
 
-        events = sorted([e for e in filtered_events if e.begin.date() >= start_date], key=lambda x: x.begin)
+        events = sorted([e for e in filtered_events if e.begin.date() >= (start_date.date() if hasattr(start_date, 'date') else start_date)], key=lambda x: x.begin)
 
         if events:
             html_output = ["<div style='font-family: sans-serif; max-width: 800px; margin: 0 auto;'>"]
@@ -67,7 +80,9 @@ if tool_choice == "📅 Syllabus Schedule":
                 for week_start in sorted(events_by_week.keys()):
                     we = events_by_week[week_start]
                     is_break = any("break" in x.name.lower() or "holiday" in x.name.lower() for x in we)
-                    week_num = ((week_start - (start_date.date() if isinstance(start_date, datetime) else start_date)).days // 7) + 1
+                    
+                    calc_start = start_date.date() if hasattr(start_date, 'date') else start_date
+                    week_num = ((week_start - calc_start).days // 7) + 1
                     
                     label = f"🍂 Week {week_num} (Break)" if is_break else f"Week {week_num}: {week_start.strftime('%b %d')}"
                     
@@ -133,17 +148,9 @@ elif tool_choice == "🚪 Door Sign Generator":
             t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
             if t_match and current_class:
                 days_list = t_match.group(1).split('/')
-                
                 room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
                 room_num = room_match.group(1) if room_match else ""
-
-                if "Remote" in line or "remote" in line:
-                    loc = "Remote"
-                elif room_num:
-                    loc = room_num
-                else:
-                    loc = ""
-
+                loc = "Remote" if ("Remote" in line or "remote" in line) else (room_num if room_num else "")
                 events.append({"type": "class", "name": current_class, "days": days_list, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
         day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th'}
@@ -164,11 +171,8 @@ elif tool_choice == "🚪 Door Sign Generator":
 
         start_hr, end_hr = 9, 20
         total_slots = (end_hr - start_hr) * 4
-        
         colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5"]
-        colors_warm = ["#fff8e1", "#fff3e0", "#fbe9e7"]
         color_map = {}
-        
         html_events = ""
         col_map = {"M": 2, "T": 3, "W": 4, "Th": 5}
         
@@ -183,8 +187,7 @@ elif tool_choice == "🚪 Door Sign Generator":
                 if ev['name'] not in color_map: color_map[ev['name']] = random.choice(colors_cool)
                 bg, border = color_map[ev['name']], "#546e7a"
             else:
-                bg = "#fff8e1"
-                border = "#d84315"
+                bg, border = "#fff8e1", "#d84315"
             for d in ev['days']:
                 if d in col_map:
                     loc_html = f"<br>{ev['loc']}" if ev['loc'] else ""
@@ -215,7 +218,7 @@ elif tool_choice == "🚪 Door Sign Generator":
 # ==========================================
 elif tool_choice == "📋 Faculty Assignment Sheet Helper":
     st.header("📋 Faculty Assignment Sheet Helper")
-    st.info("Instructions: Copy/paste your schedule directly from Self-Service below. This tool will generate a table. Select 'BASE' or 'EC' for each row in the table, then copy the result for your FAS.")
+    st.info("Instructions: Copy/paste your schedule directly from Self-Service below. Select 'BASE' or 'EC' for each row, then copy the result.")
     
     messy_text = st.text_area("Paste Schedule Text from Self-Service:", height=300)
 
@@ -223,44 +226,23 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
         if not messy_text:
             st.warning("Please paste some text first.")
         else:
-            # Hour Logic Mapping
-            hour_map = {
-                "1170": (1, 1, 2),
-                "1181": (4, 4, 5),
-                "1190": (4, 4, 5),
-                "1210": (3, 3, 4),
-                "1220": (3, 3, 4),
-                "1211": (3, 3, 4),
-                "1221": (3, 3, 4)
-            }
-
+            hour_map = {"1170": (1, 1, 2), "1181": (4, 4, 5), "1190": (4, 4, 5), "1210": (3, 3, 4), "1220": (3, 3, 4), "1211": (3, 3, 4), "1221": (3, 3, 4)}
             course_pattern = r'([A-Z]{3,4}-\d{4}-[A-Z0-9]+)'
             starts = [m.start() for m in re.finditer(course_pattern, messy_text)]
             starts.append(len(messy_text)) 
-            
-            blocks = []
-            for i in range(len(starts)-1):
-                blocks.append(messy_text[starts[i]:starts[i+1]])
+            blocks = [messy_text[starts[i]:starts[i+1]] for i in range(len(starts)-1)]
 
             rows = []
             for block in blocks:
                 name_match = re.search(course_pattern, block)
                 if not name_match: continue
-                
                 full_code = name_match.group(1)
-                course_num = full_code.split('-')[1]
-                section_code = full_code.split('-')[2]
-                class_display_name = full_code.replace("-", " ")
-
+                course_num, section_code = full_code.split('-')[1], full_code.split('-')[2]
                 cr, cont, eq = hour_map.get(course_num, (3, 3, 3))
-
                 date_finds = re.findall(r'(\d{1,2}/\d{1,2}/\d{4})', block)
-                begin_date = date_finds[0] if date_finds else ""
-                end_date = date_finds[-1] if date_finds else ""
-
+                begin_date, end_date = (date_finds[0] if date_finds else ""), (date_finds[-1] if date_finds else "")
                 t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', block, re.IGNORECASE)
                 time_str = t_match.group(1).upper() if t_match else ""
-                
                 days_found = set()
                 if t_match:
                     for line in block.split('\n'):
@@ -275,40 +257,19 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                             if re.search(r'\bF\b', up_line): days_found.add("Fri")
 
                 is_hybrid = section_code.startswith("H")
-                has_remote_label = "REMOTE" in block.upper()
-                has_online_label = "ONLINE" in block.upper()
-                
+                has_remote_label, has_online_label = "REMOTE" in block.upper(), "ONLINE" in block.upper()
                 room_match = re.search(r'SOU-([A-Z]),\s*(\d+)', block)
                 physical_room = f"S{room_match.group(1)}-{room_match.group(2)}" if room_match else ""
-                
-                room_display = ""
-                online_section_val = ""
+                room_display, online_section_val = "", ""
 
                 if is_hybrid:
-                    if physical_room: room_display = physical_room
-                    elif has_remote_label: room_display = "Remote"
+                    room_display = physical_room if physical_room else ("Remote" if has_remote_label else "")
                 else:
                     if physical_room: room_display = physical_room
                     elif has_remote_label: room_display = "Remote"
                     elif has_online_label and not time_str: online_section_val = "Yes"
 
-                row = {
-                    "Course Code /Section": class_display_name,
-                    "Cr Hrs": cr, "Cont Hrs": cont, "Eq Hrs": eq, 
-                    "Contract Type(s)": "", 
-                    "Combined With": "",
-                    "Begin Date": begin_date,
-                    "End Date": end_date,
-                    "Mon": time_str if "Mon" in days_found else "",
-                    "Tue": time_str if "Tue" in days_found else "",
-                    "Wed": time_str if "Wed" in days_found else "",
-                    "Thu": time_str if "Thu" in days_found else "",
-                    "Fri": time_str if "Fri" in days_found else "",
-                    "Sat": time_str if "Sat" in days_found else "",
-                    "Room": room_display,
-                    "Online Section": online_section_val
-                }
-                rows.append(row)
+                rows.append({"Course Code /Section": full_code.replace("-", " "), "Cr Hrs": cr, "Cont Hrs": cont, "Eq Hrs": eq, "Contract Type(s)": "", "Combined With": "", "Begin Date": begin_date, "End Date": end_date, "Mon": time_str if "Mon" in days_found else "", "Tue": time_str if "Tue" in days_found else "", "Wed": time_str if "Wed" in days_found else "", "Thu": time_str if "Thu" in days_found else "", "Fri": time_str if "Fri" in days_found else "", "Sat": time_str if "Sat" in days_found else "", "Room": room_display, "Online Section": online_section_val})
 
             if rows:
                 cols = ["Course Code /Section", "Cr Hrs", "Cont Hrs", "Eq Hrs", "Contract Type(s)", "Combined With", "Begin Date", "End Date", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Room", "Online Section"]
@@ -324,40 +285,27 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
 # ==========================================
 elif tool_choice == "⏳ Date Shifter & Calculator":
     st.header("⏳ Date Shift Calculator & Shifter")
-    
     st.subheader("1. Calculate Your Offset")
-    st.info("Input two dates to find the gap. Perfect for finding the exact number of days between semesters.")
-    
     calc_col1, calc_col2, calc_col3 = st.columns(3)
-    with calc_col1:
-        old_ref_date = st.date_input("Old Reference Date", value=datetime(2025, 8, 25))
-    with calc_col2:
-        new_ref_date = st.date_input("New Reference Date", value=datetime(2026, 1, 12))
-    with calc_col3:
-        canvas_adjustment = st.checkbox("Add +1 day for Canvas?", value=True)
-
+    with calc_col1: old_ref_date = st.date_input("Old Reference Date", value=datetime(2025, 8, 25))
+    with calc_col2: new_ref_date = st.date_input("New Reference Date", value=datetime(2026, 1, 12))
+    with calc_col3: canvas_adjustment = st.checkbox("Add +1 day for Canvas?", value=True)
     raw_delta = (new_ref_date - old_ref_date).days
     final_shift = raw_delta + 1 if canvas_adjustment else raw_delta
-
     st.metric("Total Days to Shift", f"{final_shift} days", delta=f"{raw_delta} raw + {'1 canvas' if canvas_adjustment else '0'}")
-    
     st.divider()
-
     st.subheader("2. Apply to ICS File (Optional)")
     shift_file = st.file_uploader("Upload OLD .ics file", type="ics")
-    
     if shift_file:
         c = Calendar(shift_file.read().decode("utf-8"))
         events = sorted(list(c.events), key=lambda x: x.begin)
-        
         if events:
-            st.write(f"Parsed {len(events)} events from file.")
+            st.write(f"Parsed {len(events)} events.")
             if st.button(f"Generate New ICS with +{final_shift} Day Shift"):
                 new_c = Calendar()
                 for e in events:
                     e.begin += timedelta(days=final_shift)
                     e.end += timedelta(days=final_shift)
                     new_c.events.add(e)
-                
                 st.success(f"Shifted by {final_shift} days.")
                 st.download_button("Download Shifted ICS", str(new_c), f"shifted_{final_shift}_days.ics")
