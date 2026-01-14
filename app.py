@@ -207,61 +207,62 @@ elif tool_choice == "🚪 Door Sign Generator":
                     "loc": loc
                 })
 
-        # Step 2: Parse Office Hours
+       # Step 2: Parse Office Hours (Improved AM/PM logic)
         day_map = {'Mon': 'M', 'Tue': 'T', 'Wed': 'W', 'Thu': 'Th', 'Fri': 'F'}
         for part in oh_text.split(','):
             part = part.strip()
             if not part: continue
             is_virtual = "virtual" in part.lower()
             found_days = [dcode for dname, dcode in day_map.items() if dname in part or dname.lower() in part.lower()]
-            nums = re.findall(r'\d+', part)
-            if len(nums) >= 2:
-                s_raw, e_raw = int(nums[0]), int(nums[1])
-                s_min, e_min = s_raw * 60, e_raw * 60
-                if s_raw < 8: s_min += 12*60
-                if e_raw < 8: e_min += 12*60
-                if e_raw < s_raw: e_min += 12*60
+            
+            # Find all numbers (e.g., "11", "2" or "11:30", "1")
+            time_parts = re.findall(r'(\d{1,2}(?::\d{2})?)', part)
+            
+            if len(time_parts) >= 2:
+                def parse_oh_time(t_str, is_end_time=False, start_mins=None):
+                    if ':' in t_str:
+                        h, m = map(int, t_str.split(':'))
+                    else:
+                        h, m = int(t_str), 0
+                    
+                    # Logic: If h is 1-7, it's definitely PM. 
+                    # If h is 8-11, it's likely AM unless it's the end time 
+                    # and the start time was already in the afternoon.
+                    if 1 <= h <= 7: 
+                        h += 12
+                    elif 8 <= h <= 11:
+                        # If this is the end time (like 11-1), and 11 is the start, it's AM.
+                        # But if the start was 10 AM and end is 11, it's still AM.
+                        pass 
+                    elif h == 12:
+                        pass # 12 is 12
+                    
+                    return h * 60 + m
+
+                s_min = parse_oh_time(time_parts[0])
+                e_min = parse_oh_time(time_parts[1], is_end_time=True, start_mins=s_min)
+                
+                # Final safety check: if end is before start, add 12 hours to end
+                if e_min <= s_min:
+                    e_min += 12 * 60
+                
                 name_label = "Virtual Office Hours" if is_virtual else "Office Hours"
                 events.append({"type": "oh", "name": name_label, "days": found_days, "start": s_min, "end": e_min, "loc": ""})
 
         # Step 3: Determine Dynamic Hour Range
         if events:
-            min_time = min(e['start'] for e in events)
-            max_time = max(e['end'] for e in events)
-            start_hr = max(0, (min_time // 60) - 1)  # 1 hour padding
-            end_hr = min(23, (max_time // 60) + 1)   # 1 hour padding
-        else:
-            start_hr, end_hr = 9, 17 # Default if empty
-
-        total_slots = (end_hr - start_hr) * 4
-        colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5", "#fff3e0", "#f1f8e9"]
-        color_map = {}
-        html_events = ""
-        col_map = {"M": 2, "T": 3, "W": 4, "Th": 5, "F": 6}
-        
-        for ev in events:
-            start_offset = ev['start'] - (start_hr * 60)
-            end_offset = ev['end'] - (start_hr * 60)
-            row_start = int(start_offset / 15) + 2
-            row_span = int((end_offset - start_offset) / 15)
-            if row_span < 1: row_span = 1
+            all_starts = [e['start'] for e in events]
+            all_ends = [e['end'] for e in events]
             
-            if ev['type'] == 'class':
-                if ev['name'] not in color_map: color_map[ev['name']] = colors_cool[len(color_map) % len(colors_cool)]
-                bg, border = color_map[ev['name']], "#546e7a"
-            else:
-                bg, border = "#fff8e1", "#d84315"
-                
-            for d in ev['days']:
-                if d in col_map:
-                    loc_html = f"<br>{ev['loc']}" if ev['loc'] else ""
-                    html_events += f"""<div class="event" style="grid-column: {col_map[d]}; grid-row: {row_start} / span {row_span}; background: {bg}; border-left: 4px solid {border}; color: #000;"><strong>{ev['name']}</strong>{loc_html}</div>"""
-        
-        html_times = ""
-        for h in range(start_hr, end_hr + 1):
-            r = (h - start_hr) * 4 + 2
-            label = f"{h%12 or 12} {('AM' if h<12 else 'PM')}"
-            html_times += f'<div class="time-label" style="grid-row: {r};">{label}</div><div class="grid-line" style="grid-row: {r};"></div>'
+            # Use floor/ceiling to get clean hour marks
+            start_hr = max(0, (min(all_starts) // 60) - 1) 
+            end_hr = min(23, (max(all_ends) // 60) + 1)
+            
+            # Ensure we show at least a standard workday if the span is tiny
+            if end_hr - start_hr < 4:
+                end_hr = min(23, start_hr + 6)
+        else:
+            start_hr, end_hr = 9, 17
 
         # Build Online Classes Section
         online_section_html = ""
