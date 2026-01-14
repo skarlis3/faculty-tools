@@ -55,7 +55,7 @@ if tool_choice == "📅 Syllabus Schedule":
         c = Calendar(uploaded_file.read().decode("utf-8"))
         all_events = list(c.events)
 
-        # UPDATED REGEX: Captures "ENGL 1170 S1628" or "ENGL-1170-O0823"
+        # Regex captures: "ENGL 1170 S1628" or "ENGL-1170-O0823"
         course_pattern = r'([A-Z]{3,4}\s*[-]?\s*\d{4}(?:[\s-][A-Z0-9]{4,6})?)'
         
         found_codes = []
@@ -64,7 +64,14 @@ if tool_choice == "📅 Syllabus Schedule":
             if e.description:
                 found_codes.extend(re.findall(course_pattern, e.description))
         
-        course_codes = sorted(list(set(found_codes)))
+        # DEDUPLICATION LOGIC:
+        # Keeps the most specific version (e.g., keeps "ENGL 1170 S1628" and removes "ENGL 1170")
+        unique_raw = sorted(list(set(found_codes)), key=len, reverse=True)
+        course_codes = []
+        for code in unique_raw:
+            if not any(code in longer_code for longer_code in course_codes):
+                course_codes.append(code)
+        course_codes.sort() # Alphabetical for dropdown
         
         selected_course = None
         if len(course_codes) > 1:
@@ -151,13 +158,12 @@ elif tool_choice == "🚪 Door Sign Generator":
             line = line.strip()
             if not line: continue
             
-            # UPDATED: Capture Class + Section (e.g., ENGL 1170 S1628)
+            # Capture Class + Section (e.g., ENGL 1170 S1628)
             if "ENGL-" in line:
                 match = re.search(r'(ENGL-\d+-[A-Z0-9]+)', line)
                 if match:
                     current_class = match.group(1).replace("-", " ")
                 else:
-                    # Fallback to just number if section missing
                     match_simple = re.search(r'(ENGL-\d+)', line)
                     current_class = match_simple.group(1).replace("-", " ") if match_simple else "Class"
             
