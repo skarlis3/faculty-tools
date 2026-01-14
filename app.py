@@ -113,10 +113,10 @@ if tool_choice == "📅 Syllabus Schedule":
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
-    st.markdown("Supports day ranges (e.g., **M-Th 10-12**) and dynamic hour ranges.")
+    st.markdown("Copy your schedule from self-service and paste it below to generate a schedule for your door. Office hours can be added in the field below.")
 
     raw_schedule = st.text_area("1. Paste Class Schedule:", height=150, placeholder="ENGL-1181-O0812\nENGL-1190-S1628\nMW 9:00 AM - 10:30 AM")
-    oh_text = st.text_input("2. Office Hours (e.g., 'M-Th 11-2, Fri 9-10'):")
+    oh_text = st.text_input("2. Office Hours (e.g., 'M-Th 11-1, Fri 9-10' or Mon/Wed 10-12, Virtual: Mon-Tue 5-6):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
     if st.button("Generate Door Sign"):
