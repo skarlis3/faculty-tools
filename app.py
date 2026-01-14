@@ -109,13 +109,13 @@ if tool_choice == "📅 Syllabus Schedule":
             st.download_button("Download HTML", "\n".join(html_output), "schedule.html", "text/html")
 
 # ==========================================
-# TOOL 2: DOOR SIGN GENERATOR
+# TOOL 2: DOOR SIGN GENERATOR (UPDATED)
 # ==========================================
 elif tool_choice == "🚪 Door Sign Generator":
     st.header("Visual Faculty Door Sign")
-    st.markdown("Copy your schedule from self-service and paste it below. Office hours will automatically be labeled in full for student clarity.")
+    st.markdown("Generates a clean grid. Logic: Sections starting with **O** are listed at bottom; **H** or **S** are on the grid. Overlapping sections will be merged automatically.")
 
-    raw_schedule = st.text_area("1. Paste Class Schedule:", height=150, placeholder="ENGL-1181-O0812\n8/19/25-10/15/25\nENGL-1190-S1628\nMW 9:00 AM - 10:30 AM")
+    raw_schedule = st.text_area("1. Paste Class Schedule:", height=150, placeholder="ENGL-1181-S1601\nM/W 12:00 PM - 1:55 PM\nENGL-1181-S1602\nM/W 12:00 PM - 1:55 PM")
     oh_text = st.text_input("2. Office Hours (e.g., 'M-Th 11-1, Fri 9-10' or Mon/Wed 10-12, Virtual Mon-Tue 5-6):")
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
@@ -141,7 +141,7 @@ elif tool_choice == "🚪 Door Sign Generator":
         months = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
         
         events = []
-        online_data = {} # full_code -> month_string
+        online_data = {} 
         lines = raw_schedule.split('\n')
         current_class_name, current_section = None, None
 
@@ -149,7 +149,7 @@ elif tool_choice == "🚪 Door Sign Generator":
             line = line.strip()
             if not line: continue
             
-            # Identify Class + Section
+            # Identify Class + Section (Captures ENGL-1181-S1601 etc)
             class_match = re.search(r'ENGL[- ](\d+)[- ]([A-Z0-9]+)', line)
             if class_match:
                 current_class_name = f"ENGL {class_match.group(1)}"
@@ -159,7 +159,7 @@ elif tool_choice == "🚪 Door Sign Generator":
                     if full_code not in online_data:
                         online_data[full_code] = ""
 
-            # Look for Start Date (e.g. 8/19/25)
+            # Look for Start Date Month
             date_match = re.search(r'(\d{1,2})/\d{1,2}/\d{2,4}', line)
             if date_match and current_class_name:
                 full_code = f"{current_class_name} {current_section}"
@@ -167,22 +167,40 @@ elif tool_choice == "🚪 Door Sign Generator":
                     m_idx = int(date_match.group(1))
                     online_data[full_code] = f" ({months[m_idx]} start)"
 
-            # Look for Time/Day pattern (for Hybrid/In-Person)
-            t_match = re.search(r'([MTWRFS/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
+            # Look for Time/Day pattern (Updated Regex to catch 'Th')
+            t_match = re.search(r'([MTWRFSh/]+)\s+(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)', line)
             if t_match and current_class_name:
                 full_code = f"{current_class_name} {current_section}"
-                # If it has a time, it's not "Online Only" for the bottom list
                 if full_code in online_data: del online_data[full_code]
                 
                 days_list = []
                 raw_days = t_match.group(1)
-                for char, code in zip(['M','T','W','R','F'],['M','T','W','Th','F']):
-                    if char in raw_days: days_list.append(code)
+                if 'M' in raw_days: days_list.append('M')
+                if 'T' in raw_days: days_list.append('T')
+                if 'W' in raw_days: days_list.append('W')
+                if 'R' in raw_days or 'Th' in raw_days: days_list.append('Th')
+                if 'F' in raw_days: days_list.append('F')
+                
+                start_val = get_minutes(t_match.group(2))
+                end_val = get_minutes(t_match.group(3))
                 room_match = re.search(r'\b([A-Z]{1,3}-\d{3,4})\b', line)
                 loc = "Remote" if "remote" in line.lower() else (room_match.group(1) if room_match else "")
-                events.append({"type": "class", "name": full_code, "days": days_list, "start": get_minutes(t_match.group(2)), "end": get_minutes(t_match.group(3)), "loc": loc})
 
-        # OFFICE HOUR RANGE PARSER
+                # MERGE LOGIC: Check if an event already exists at this time/location
+                duplicate_found = False
+                for existing in events:
+                    if existing['start'] == start_val and existing['end'] == end_val and set(existing['days']) == set(days_list):
+                        # If it's the same class type, just append the section
+                        if current_class_name in existing['name']:
+                            if current_section not in existing['name']:
+                                existing['name'] += f"/{current_section}"
+                            duplicate_found = True
+                            break
+                
+                if not duplicate_found:
+                    events.append({"type": "class", "name": full_code, "days": days_list, "start": start_val, "end": end_val, "loc": loc})
+
+        # Parse Office Hours
         day_map_list = ['M', 'T', 'W', 'Th', 'F']
         day_name_to_idx = {'MON':0, 'M':0, 'TUE':1, 'T':1, 'WED':2, 'W':2, 'THU':3, 'TH':3, 'R':3, 'FRI':4, 'F':4}
 
@@ -191,7 +209,6 @@ elif tool_choice == "🚪 Door Sign Generator":
             if not part: continue
             is_virtual = "virtual" in part.lower()
             search_string = part.upper().replace("VIRTUAL", "")
-            
             range_match = re.search(r'([A-Z]+)\s*-\s*([A-Z]+)', search_string)
             found_days = []
             if range_match:
@@ -278,7 +295,7 @@ elif tool_choice == "📋 Faculty Assignment Sheet Helper":
                 cr, cont, eq = hour_map.get(c_num, (3,3,3))
                 date_finds = re.findall(r'(\d{1,2}/\d{1,2}/\d{4})', block)
                 b_date, e_date = (date_finds[0] if date_finds else ""), (date_finds[-1] if date_finds else "")
-                t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d.2\s*[AP]M)', block, re.I)
+                t_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?\s*-\s*\d{1,2}:\d{2}\s*[AP]M)', block, re.I)
                 time_s, days_f = (t_match.group(1).upper() if t_match else ""), set()
                 if t_match:
                     up_block = block.upper()
