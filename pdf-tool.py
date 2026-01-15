@@ -154,12 +154,17 @@ with st.sidebar:
     st.markdown("✓ Generate TOC")
     st.markdown("✓ Reorder files")
 
+# Initialize file uploader key
+if 'file_uploader_key' not in st.session_state:
+    st.session_state.file_uploader_key = 0
+
 # File uploader
 uploaded_files = st.file_uploader(
     "Upload PDF files",
     type=['pdf'],
     accept_multiple_files=True,
-    help="Upload one or more PDF files to merge"
+    help="Upload one or more PDF files to merge",
+    key=f"file_uploader_{st.session_state.file_uploader_key}"
 )
 
 # Add uploaded files to session state
@@ -244,6 +249,10 @@ if st.session_state.pdf_files:
     with col2:
         if st.button("🗑️ Clear All Files", use_container_width=True):
             st.session_state.pdf_files = []
+            # Clear the file uploader by resetting its key
+            if 'file_uploader_key' not in st.session_state:
+                st.session_state.file_uploader_key = 0
+            st.session_state.file_uploader_key += 1
             st.rerun()
 
 else:
