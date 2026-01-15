@@ -4,7 +4,7 @@ from io import BytesIO
 import fitz  # PyMuPDF
 from collections import defaultdict
 
-st.set_page_config(page_title="PDF Accessibility Tagger", page_icon="✓", layout="wide")
+st.set_page_config(page_title="PDF Accessibility Tagger", page_icon="🏷️", layout="wide")
 
 # Custom CSS for clean, professional look
 st.markdown("""
