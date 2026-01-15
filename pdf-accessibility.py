@@ -6,9 +6,10 @@ from collections import defaultdict
 
 st.set_page_config(page_title="PDF Accessibility Tagger", page_icon="🏷️", layout="wide")
 
-# Custom CSS for clean, professional look
+# Custom CSS for clean, professional look with dark mode support
 st.markdown("""
 <style>
+    /* Light mode styles */
     .main-header {
         font-size: 2rem;
         font-weight: 600;
@@ -23,16 +24,21 @@ st.markdown("""
     .instruction-box {
         background-color: #f1f5f9;
         border-left: 4px solid #3b82f6;
-        padding: 1rem;
+        padding: 1.5rem;
         margin: 1rem 0;
         border-radius: 0.5rem;
         color: #1e293b;
+        line-height: 1.8;
     }
     .instruction-box strong {
         color: #0f172a;
     }
     .instruction-box ul {
         color: #334155;
+        margin: 0.75rem 0;
+    }
+    .instruction-box li {
+        margin: 0.5rem 0;
     }
     .step-number {
         display: inline-block;
@@ -44,16 +50,56 @@ st.markdown("""
         text-align: center;
         line-height: 28px;
         font-weight: 600;
-        margin-right: 0.5rem;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    .step-line {
+        display: flex;
+        align-items: center;
+        margin: 0.75rem 0;
     }
     .text-preview {
-        background-color: #f8fafc;
+        background-color: #ffffff;
         border: 1px solid #e2e8f0;
         padding: 0.75rem;
         border-radius: 0.5rem;
         margin: 0.5rem 0;
         font-family: 'Georgia', serif;
+        color: #1e293b;
     }
+    .text-preview small {
+        color: #64748b;
+    }
+    
+    /* Dark mode styles */
+    @media (prefers-color-scheme: dark) {
+        .main-header {
+            color: #f1f5f9;
+        }
+        .subtitle {
+            color: #cbd5e1;
+        }
+        .instruction-box {
+            background-color: #1e293b;
+            border-left: 4px solid #60a5fa;
+            color: #e2e8f0;
+        }
+        .instruction-box strong {
+            color: #f1f5f9;
+        }
+        .instruction-box ul {
+            color: #cbd5e1;
+        }
+        .text-preview {
+            background-color: #1e293b;
+            border: 1px solid #475569;
+            color: #e2e8f0;
+        }
+        .text-preview small {
+            color: #94a3b8;
+        }
+    }
+    
     .tag-badge {
         display: inline-block;
         padding: 0.25rem 0.75rem;
@@ -166,10 +212,30 @@ with st.expander("How to Use This Tool", expanded=(st.session_state.current_step
         <li>Review and adjust the suggested heading tags</li>
         <li>Export an accessible PDF with proper structure for screen readers</li>
     </ul>
-    <strong>The Process:</strong><br>
-    <span class="step-number">1</span> Upload your PDF file<br>
-    <span class="step-number">2</span> Review the automatically detected headings<br>
-    <span class="step-number">3</span> Adjust any tags that were incorrectly identified<br>
+    
+    <strong>The Process:</strong><br><br>
+    
+    <div class="step-line">
+        <span class="step-number">1</span>
+        <span>Upload your PDF file</span>
+    </div>
+    
+    <div class="step-line">
+        <span class="step-number">2</span>
+        <span>Review the automatically detected headings</span>
+    </div>
+    
+    <div class="step-line">
+        <span class="step-number">3</span>
+        <span>Adjust any tags that were incorrectly identified</span>
+    </div>
+    
+    <div class="step-line">
+        <span class="step-number">4</span>
+        <span>Download your accessible PDF</span>
+    </div>
+    </div>
+    """, unsafe_allow_html=True)ectly identified<br>
     <span class="step-number">4</span> Download your accessible PDF
     </div>
     """, unsafe_allow_html=True)
