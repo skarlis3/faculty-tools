@@ -26,6 +26,13 @@ st.markdown("""
         padding: 1rem;
         margin: 1rem 0;
         border-radius: 0.5rem;
+        color: #1e293b;
+    }
+    .instruction-box strong {
+        color: #0f172a;
+    }
+    .instruction-box ul {
+        color: #334155;
     }
     .step-number {
         display: inline-block;
