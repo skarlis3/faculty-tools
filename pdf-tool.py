@@ -8,6 +8,31 @@ import base64
 
 st.set_page_config(page_title="PDF Merger & Editor", page_icon="📄", layout="wide")
 
+# Custom CSS for better colors
+st.markdown("""
+<style>
+    .stButton button {
+        border-radius: 8px;
+    }
+    /* Primary buttons - teal/cyan accent */
+    div[data-testid="stButton"] button[kind="primary"] {
+        background-color: #0891b2;
+        color: white;
+    }
+    div[data-testid="stButton"] button[kind="primary"]:hover {
+        background-color: #0e7490;
+    }
+    /* Secondary buttons - purple accent */
+    .secondary-button button {
+        background-color: #7c3aed;
+        color: white;
+    }
+    .secondary-button button:hover {
+        background-color: #6d28d9;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Initialize session state
 if 'pdf_files' not in st.session_state:
     st.session_state.pdf_files = []
@@ -147,8 +172,17 @@ def merge_pdfs(pdf_list, add_toc=True, page_num_position='bottom-center', start_
     return merged_bytes
 
 # UI
-st.title("📄 PDF Merger & Editor")
-st.markdown("Upload, reorder pages, and merge PDF files with page numbers and table of contents")
+col_title, col_clear = st.columns([5, 1])
+with col_title:
+    st.title("📄 PDF Merger & Editor")
+    st.markdown("Upload, reorder pages, and merge PDF files with page numbers and table of contents")
+with col_clear:
+    st.markdown("<br>", unsafe_allow_html=True)  # Add spacing
+    if st.button("🔄 Reset All", use_container_width=True, help="Clear all uploaded files and start fresh"):
+        st.session_state.pdf_files = []
+        st.session_state.file_uploader_key += 1
+        st.session_state.editing_file_idx = None
+        st.rerun()
 
 # Sidebar settings
 with st.sidebar:
@@ -262,7 +296,7 @@ if st.session_state.editing_file_idx is not None:
                         st.rerun()
             
             with col5:
-                if st.button("🗑️", key=f"page_remove_{page_idx}"):
+                if st.button("✖️", key=f"page_remove_{page_idx}", help="Remove this page"):
                     pdf_file['pages'].pop(page_idx)
                     if len(pdf_file['pages']) == 0:
                         st.session_state.pdf_files.pop(idx)
@@ -310,7 +344,7 @@ elif st.session_state.pdf_files:
                     st.rerun()
         
         with col5:
-            if st.button("🗑️", key=f"remove_{idx}"):
+            if st.button("✖️", key=f"remove_{idx}", help="Remove this file"):
                 st.session_state.pdf_files.pop(idx)
                 st.rerun()
     
@@ -320,7 +354,7 @@ elif st.session_state.pdf_files:
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("🔄 Merge & Download PDF", type="primary", use_container_width=True):
+        if st.button("📥 Merge & Download PDF", type="primary", use_container_width=True):
             with st.spinner("Processing PDF..."):
                 try:
                     merged_pdf = merge_pdfs(
@@ -342,7 +376,7 @@ elif st.session_state.pdf_files:
                     st.error(f"❌ Error merging PDFs: {str(e)}")
     
     with col2:
-        if st.button("🗑️ Clear All Files", use_container_width=True):
+        if st.button("🔄 Clear All", use_container_width=True, help="Remove all files"):
             st.session_state.pdf_files = []
             st.session_state.file_uploader_key += 1
             st.session_state.editing_file_idx = None
