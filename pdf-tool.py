@@ -8,27 +8,19 @@ import base64
 
 st.set_page_config(page_title="PDF Merger & Editor", page_icon="📄", layout="wide")
 
-# Custom CSS for better colors
+# Custom CSS for clean, professional look
 st.markdown("""
 <style>
     .stButton button {
         border-radius: 8px;
     }
-    /* Primary buttons - teal/cyan accent */
+    /* Primary buttons - teal accent */
     div[data-testid="stButton"] button[kind="primary"] {
         background-color: #0891b2;
         color: white;
     }
     div[data-testid="stButton"] button[kind="primary"]:hover {
         background-color: #0e7490;
-    }
-    /* Secondary buttons - purple accent */
-    .secondary-button button {
-        background-color: #7c3aed;
-        color: white;
-    }
-    .secondary-button button:hover {
-        background-color: #6d28d9;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -174,11 +166,11 @@ def merge_pdfs(pdf_list, add_toc=True, page_num_position='bottom-center', start_
 # UI
 col_title, col_clear = st.columns([5, 1])
 with col_title:
-    st.title("📄 PDF Merger & Editor")
+    st.title("PDF Merger & Editor")
     st.markdown("Upload, reorder pages, and merge PDF files with page numbers and table of contents")
 with col_clear:
     st.markdown("<br>", unsafe_allow_html=True)  # Add spacing
-    if st.button("🔄 Reset All", use_container_width=True, help="Clear all uploaded files and start fresh"):
+    if st.button("Reset All", use_container_width=True, help="Clear all uploaded files and start fresh"):
         st.session_state.pdf_files = []
         st.session_state.file_uploader_key += 1
         st.session_state.editing_file_idx = None
@@ -186,7 +178,7 @@ with col_clear:
 
 # Sidebar settings
 with st.sidebar:
-    st.header("⚙️ Settings")
+    st.header("Settings")
     
     add_toc = st.checkbox("Add Table of Contents", value=False)
     
@@ -201,11 +193,11 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### Features")
-    st.markdown("✓ Merge multiple PDFs")
-    st.markdown("✓ Reorder pages within PDFs")
-    st.markdown("✓ Add page numbers")
-    st.markdown("✓ Generate TOC")
-    st.markdown("✓ Delete pages")
+    st.markdown("• Merge multiple PDFs")
+    st.markdown("• Reorder pages within PDFs")
+    st.markdown("• Add page numbers")
+    st.markdown("• Generate TOC")
+    st.markdown("• Delete pages")
 
 # File uploader
 uploaded_files = st.file_uploader(
@@ -235,14 +227,14 @@ if st.session_state.editing_file_idx is not None:
     if idx < len(st.session_state.pdf_files):
         pdf_file = st.session_state.pdf_files[idx]
         
-        st.markdown(f"### 📑 Editing Pages: {pdf_file['name']}")
+        st.markdown(f"### Editing Pages: {pdf_file['name']}")
         
         col1, col2, col3 = st.columns([3, 2, 1])
         with col1:
             st.info(f"Total pages: {len(pdf_file['pages'])}")
         with col2:
             # Download single edited PDF
-            if st.button("💾 Download This PDF", use_container_width=True):
+            if st.button("Download This PDF", use_container_width=True):
                 writer = PdfWriter()
                 for page_info in pdf_file['pages']:
                     reader = PdfReader(BytesIO(page_info['bytes']))
@@ -252,13 +244,13 @@ if st.session_state.editing_file_idx is not None:
                 output.seek(0)
                 
                 st.download_button(
-                    label="⬇️ Download",
+                    label="Download",
                     data=output.read(),
                     file_name=f"edited_{pdf_file['name']}",
                     mime="application/pdf"
                 )
         with col3:
-            if st.button("✅ Done", use_container_width=True):
+            if st.button("Done", use_container_width=True):
                 st.session_state.editing_file_idx = None
                 st.rerun()
         
@@ -284,19 +276,19 @@ if st.session_state.editing_file_idx is not None:
             with col4:
                 col_up, col_down = st.columns(2)
                 with col_up:
-                    if st.button("⬆️", key=f"page_up_{page_idx}", disabled=(page_idx == 0)):
+                    if st.button("↑", key=f"page_up_{page_idx}", disabled=(page_idx == 0)):
                         pdf_file['pages'][page_idx], pdf_file['pages'][page_idx - 1] = \
                             pdf_file['pages'][page_idx - 1], pdf_file['pages'][page_idx]
                         st.rerun()
                 with col_down:
-                    if st.button("⬇️", key=f"page_down_{page_idx}", 
+                    if st.button("↓", key=f"page_down_{page_idx}", 
                                disabled=(page_idx == len(pdf_file['pages']) - 1)):
                         pdf_file['pages'][page_idx], pdf_file['pages'][page_idx + 1] = \
                             pdf_file['pages'][page_idx + 1], pdf_file['pages'][page_idx]
                         st.rerun()
             
             with col5:
-                if st.button("✖️", key=f"page_remove_{page_idx}", help="Remove this page"):
+                if st.button("×", key=f"page_remove_{page_idx}", help="Remove this page"):
                     pdf_file['pages'].pop(page_idx)
                     if len(pdf_file['pages']) == 0:
                         st.session_state.pdf_files.pop(idx)
@@ -314,25 +306,25 @@ elif st.session_state.pdf_files:
         # SINGLE FILE MODE - Emphasize editing
         pdf_file = st.session_state.pdf_files[0]
         
-        st.info(f"📄 **{pdf_file['name']}** • {len(pdf_file['pages'])} pages")
+        st.info(f"{pdf_file['name']} • {len(pdf_file['pages'])} pages")
         
         st.markdown("#### What would you like to do?")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("✏️ Edit Pages", type="primary", use_container_width=True, 
+            if st.button("Edit Pages", type="primary", use_container_width=True, 
                         help="Reorder, remove pages, or add page numbers"):
                 st.session_state.editing_file_idx = 0
                 st.rerun()
         
         with col2:
-            if st.button("➕ Add More Files to Merge", use_container_width=True,
+            if st.button("Add More Files to Merge", use_container_width=True,
                         help="Upload additional PDFs to combine"):
-                st.info("👆 Use the file uploader above to add more PDFs")
+                st.info("Use the file uploader above to add more PDFs")
         
         st.markdown("---")
-        st.caption("💡 Tip: Click 'Edit Pages' to reorder, remove pages, or download with page numbers")
+        st.caption("Tip: Click 'Edit Pages' to reorder, remove pages, or download with page numbers")
         if st.button("🔄 Start Over", use_container_width=False):
             st.session_state.pdf_files = []
             st.session_state.file_uploader_key += 1
@@ -367,14 +359,14 @@ elif st.session_state.pdf_files:
                     subcol1, subcol2, subcol3, subcol4 = st.columns(4)
                     
                     with subcol1:
-                        if st.button("⬆️", key=f"up_{idx}", disabled=(idx == 0), 
+                        if st.button("↑", key=f"up_{idx}", disabled=(idx == 0), 
                                    help="Move up"):
                             st.session_state.pdf_files[idx], st.session_state.pdf_files[idx - 1] = \
                                 st.session_state.pdf_files[idx - 1], st.session_state.pdf_files[idx]
                             st.rerun()
                     
                     with subcol2:
-                        if st.button("⬇️", key=f"down_{idx}", 
+                        if st.button("↓", key=f"down_{idx}", 
                                    disabled=(idx == len(st.session_state.pdf_files) - 1),
                                    help="Move down"):
                             st.session_state.pdf_files[idx], st.session_state.pdf_files[idx + 1] = \
@@ -382,12 +374,12 @@ elif st.session_state.pdf_files:
                             st.rerun()
                     
                     with subcol3:
-                        if st.button("✏️", key=f"edit_{idx}", help="Edit pages"):
+                        if st.button("Edit", key=f"edit_{idx}", help="Edit pages"):
                             st.session_state.editing_file_idx = idx
                             st.rerun()
                     
                     with subcol4:
-                        if st.button("✖️", key=f"remove_{idx}", help="Remove"):
+                        if st.button("×", key=f"remove_{idx}", help="Remove"):
                             st.session_state.pdf_files.pop(idx)
                             st.rerun()
                 
@@ -399,7 +391,7 @@ elif st.session_state.pdf_files:
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("📥 Merge & Download All", type="primary", use_container_width=True):
+            if st.button("Merge & Download All", type="primary", use_container_width=True):
                 with st.spinner("Merging PDFs..."):
                     try:
                         merged_pdf = merge_pdfs(
@@ -410,25 +402,25 @@ elif st.session_state.pdf_files:
                         )
                         
                         st.download_button(
-                            label="⬇️ Download Merged PDF",
+                            label="Download Merged PDF",
                             data=merged_pdf,
                             file_name="merged_document.pdf",
                             mime="application/pdf",
                             use_container_width=True
                         )
-                        st.success("✅ PDF merged successfully!")
+                        st.success("PDF merged successfully!")
                     except Exception as e:
-                        st.error(f"❌ Error merging PDFs: {str(e)}")
+                        st.error(f"Error merging PDFs: {str(e)}")
         
         with col2:
-            if st.button("🔄 Clear All", use_container_width=True, help="Remove all files"):
+            if st.button("Clear All", use_container_width=True, help="Remove all files"):
                 st.session_state.pdf_files = []
                 st.session_state.file_uploader_key += 1
                 st.session_state.editing_file_idx = None
                 st.rerun()
 
 else:
-    st.info("👆 Upload PDF files to get started")
+    st.info("Upload PDF files to get started")
 
 # Footer
 st.markdown("---")
