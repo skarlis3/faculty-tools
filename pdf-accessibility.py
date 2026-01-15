@@ -128,7 +128,7 @@ if 'current_step' not in st.session_state:
     st.session_state.current_step = 1
 
 def analyze_pdf_hierarchy(pdf_bytes):
-    """Analyze PDF to detect text hierarchy based on font size and style"""
+    """Analyze PDF to detect text hierarchy based on multiple factors"""
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     text_elements = []
     
@@ -138,36 +138,76 @@ def analyze_pdf_hierarchy(pdf_bytes):
         for block in blocks:
             if block["type"] == 0:  # Text block
                 for line in block["lines"]:
-                    for span in line["spans"]:
-                        text = span["text"].strip()
-                        if text:
-                            text_elements.append({
-                                'page': page_num + 1,
-                                'text': text,
-                                'font_size': span["size"],
-                                'font_name': span["font"],
-                                'bold': "Bold" in span["font"],
-                                'suggested_tag': None,
-                                'user_tag': None
-                            })
+                    # Combine all spans in a line into one element
+                    line_text = " ".join(span["text"] for span in line["spans"]).strip()
+                    
+                    if line_text and len(line_text) > 1:  # Skip single characters
+                        # Get the largest font in this line (usually the dominant one)
+                        max_font_size = max(span["size"] for span in line["spans"])
+                        fonts = [span["font"] for span in line["spans"]]
+                        is_bold = any("Bold" in font for font in fonts)
+                        is_italic = any("Italic" in font or "Oblique" in font for font in fonts)
+                        
+                        # Get vertical position on page
+                        y_position = line["bbox"][1]
+                        
+                        text_elements.append({
+                            'page': page_num + 1,
+                            'text': line_text,
+                            'font_size': max_font_size,
+                            'fonts': fonts,
+                            'bold': is_bold,
+                            'italic': is_italic,
+                            'y_position': y_position,
+                            'char_count': len(line_text),
+                            'word_count': len(line_text.split()),
+                            'suggested_tag': None,
+                            'user_tag': None
+                        })
     
-    # Sort by font size to determine hierarchy
+    # Analyze patterns to suggest tags
     if text_elements:
-        font_sizes = sorted(set(elem['font_size'] for elem in text_elements), reverse=True)
-        
-        for elem in text_elements:
-            size = elem['font_size']
-            text_length = len(elem['text'])
+        # Look for common patterns
+        for i, elem in enumerate(text_elements):
+            text = elem['text']
+            char_count = elem['char_count']
+            word_count = elem['word_count']
             
-            # Heuristic: Suggest tags based on font size and text length
-            if size >= font_sizes[0] and text_length < 100:
-                elem['suggested_tag'] = 'H1'
-            elif len(font_sizes) > 1 and size >= font_sizes[1] and text_length < 100:
-                elem['suggested_tag'] = 'H2'
-            elif len(font_sizes) > 2 and size >= font_sizes[2] and text_length < 100:
-                elem['suggested_tag'] = 'H3'
-            elif elem['bold'] and text_length < 150:
-                elem['suggested_tag'] = 'H3'
+            # Skip very long paragraphs
+            if char_count > 300:
+                elem['suggested_tag'] = 'Body Text'
+                elem['user_tag'] = 'Body Text'
+                continue
+            
+            # Pattern 1: Short lines (likely titles or headings)
+            if char_count < 100 and word_count <= 10:
+                # Check if it's isolated (has space before/after)
+                has_space_before = i == 0 or text_elements[i-1]['char_count'] > 200
+                has_space_after = i == len(text_elements)-1 or text_elements[i+1]['char_count'] > 200
+                
+                if has_space_before or has_space_after:
+                    # Check position on page (titles often at top)
+                    if elem['y_position'] < 200:
+                        elem['suggested_tag'] = 'H1'
+                    else:
+                        # Look for name patterns (likely author names)
+                        words = text.split()
+                        # Check if it looks like a name (2-4 capitalized words)
+                        if 2 <= word_count <= 4 and all(w[0].isupper() for w in words if w):
+                            elem['suggested_tag'] = 'H2'
+                        else:
+                            elem['suggested_tag'] = 'H2'
+                else:
+                    elem['suggested_tag'] = 'H3'
+            
+            # Pattern 2: Moderate length (50-200 chars)
+            elif 50 <= char_count <= 200:
+                if elem['bold'] or elem['italic']:
+                    elem['suggested_tag'] = 'H3'
+                else:
+                    elem['suggested_tag'] = 'Body Text'
+            
+            # Pattern 3: Everything else is body text
             else:
                 elem['suggested_tag'] = 'Body Text'
             
