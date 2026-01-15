@@ -3,6 +3,7 @@ from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from io import BytesIO
+import fitz  # PyMuPDF for thumbnails
 import base64
 
 st.set_page_config(page_title="PDF Merger & Editor", page_icon="📄", layout="wide")
@@ -16,19 +17,32 @@ if 'editing_file_idx' not in st.session_state:
     st.session_state.editing_file_idx = None
 
 def extract_pages_from_pdf(pdf_bytes):
-    """Extract individual pages from a PDF"""
+    """Extract individual pages from a PDF with thumbnails"""
     reader = PdfReader(BytesIO(pdf_bytes))
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     pages = []
+    
     for i, page in enumerate(reader.pages):
+        # Extract page as separate PDF
         writer = PdfWriter()
         writer.add_page(page)
         output = BytesIO()
         writer.write(output)
         output.seek(0)
+        
+        # Generate thumbnail
+        fitz_page = doc[i]
+        pix = fitz_page.get_pixmap(matrix=fitz.Matrix(0.3, 0.3))  # Scale down for thumbnail
+        img_bytes = pix.tobytes("png")
+        thumbnail_base64 = base64.b64encode(img_bytes).decode()
+        
         pages.append({
             'page_num': i + 1,
-            'bytes': output.read()
+            'bytes': output.read(),
+            'thumbnail': thumbnail_base64
         })
+    
+    doc.close()
     return pages
 
 def add_page_numbers(input_pdf_bytes, position='bottom-center', start_num=1):
@@ -140,13 +154,13 @@ st.markdown("Upload, reorder pages, and merge PDF files with page numbers and ta
 with st.sidebar:
     st.header("⚙️ Settings")
     
-    add_toc = st.checkbox("Add Table of Contents", value=True)
+    add_toc = st.checkbox("Add Table of Contents", value=False)
     
     page_num_position = st.selectbox(
         "Page Number Position",
         options=['none', 'bottom-center', 'bottom-right', 'bottom-left', 
                 'top-center', 'top-right', 'top-left'],
-        index=1
+        index=0
     )
     
     start_page_num = st.number_input("Start Page Number", min_value=1, value=1, step=1)
@@ -189,27 +203,51 @@ if st.session_state.editing_file_idx is not None:
         
         st.markdown(f"### 📑 Editing Pages: {pdf_file['name']}")
         
-        col1, col2 = st.columns([4, 1])
+        col1, col2, col3 = st.columns([3, 2, 1])
         with col1:
             st.info(f"Total pages: {len(pdf_file['pages'])}")
         with col2:
-            if st.button("✅ Done Editing"):
+            # Download single edited PDF
+            if st.button("💾 Download This PDF", use_container_width=True):
+                writer = PdfWriter()
+                for page_info in pdf_file['pages']:
+                    reader = PdfReader(BytesIO(page_info['bytes']))
+                    writer.add_page(reader.pages[0])
+                output = BytesIO()
+                writer.write(output)
+                output.seek(0)
+                
+                st.download_button(
+                    label="⬇️ Download",
+                    data=output.read(),
+                    file_name=f"edited_{pdf_file['name']}",
+                    mime="application/pdf"
+                )
+        with col3:
+            if st.button("✅ Done", use_container_width=True):
                 st.session_state.editing_file_idx = None
                 st.rerun()
         
         st.markdown("---")
         
-        # Display pages
+        # Display pages with thumbnails
         for page_idx, page_info in enumerate(pdf_file['pages']):
-            col1, col2, col3, col4 = st.columns([0.5, 3, 1, 1])
+            col1, col2, col3, col4, col5 = st.columns([0.5, 1.5, 2, 1, 1])
             
             with col1:
                 st.markdown(f"**{page_idx + 1}**")
             
             with col2:
-                st.text(f"Page {page_info['page_num']} from original")
+                # Display thumbnail
+                st.image(
+                    f"data:image/png;base64,{page_info['thumbnail']}", 
+                    width=80
+                )
             
             with col3:
+                st.text(f"Original page {page_info['page_num']}")
+            
+            with col4:
                 col_up, col_down = st.columns(2)
                 with col_up:
                     if st.button("⬆️", key=f"page_up_{page_idx}", disabled=(page_idx == 0)):
@@ -223,7 +261,7 @@ if st.session_state.editing_file_idx is not None:
                             pdf_file['pages'][page_idx + 1], pdf_file['pages'][page_idx]
                         st.rerun()
             
-            with col4:
+            with col5:
                 if st.button("🗑️", key=f"page_remove_{page_idx}"):
                     pdf_file['pages'].pop(page_idx)
                     if len(pdf_file['pages']) == 0:
