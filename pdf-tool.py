@@ -275,7 +275,7 @@ if st.session_state.editing_file_idx is not None:
                 # Display thumbnail
                 st.image(
                     f"data:image/png;base64,{page_info['thumbnail']}", 
-                    width=80
+                    width=150
                 )
             
             with col3:
@@ -305,82 +305,180 @@ if st.session_state.editing_file_idx is not None:
 
 # Main file list view
 elif st.session_state.pdf_files:
-    st.markdown("### 📚 Files to Merge")
+    st.markdown("### 📚 Your PDF Files")
     
-    for idx, pdf_file in enumerate(st.session_state.pdf_files):
-        col1, col2, col3, col4, col5 = st.columns([0.5, 3, 2, 1.5, 1])
+    # Show different UI based on number of files
+    single_file_mode = len(st.session_state.pdf_files) == 1
+    
+    if single_file_mode:
+        # SINGLE FILE MODE - Emphasize editing
+        pdf_file = st.session_state.pdf_files[0]
+        
+        st.info(f"📄 **{pdf_file['name']}** • {len(pdf_file['pages'])} pages")
+        
+        st.markdown("#### What would you like to do?")
+        
+        col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown(f"**#{idx + 1}**")
+            if st.button("✏️ Edit Pages", type="primary", use_container_width=True, 
+                        help="Reorder or remove pages"):
+                st.session_state.editing_file_idx = 0
+                st.rerun()
         
         with col2:
-            st.text(f"{pdf_file['name']} ({len(pdf_file['pages'])} pages)")
+            if st.button("💾 Download As-Is", use_container_width=True,
+                        help="Download without changes"):
+                writer = PdfWriter()
+                for page_info in pdf_file['pages']:
+                    reader = PdfReader(BytesIO(page_info['bytes']))
+                    writer.add_page(reader.pages[0])
+                output = BytesIO()
+                writer.write(output)
+                output.seek(0)
+                
+                st.download_button(
+                    label="⬇️ Download PDF",
+                    data=output.read(),
+                    file_name=pdf_file['name'],
+                    mime="application/pdf",
+                    use_container_width=True
+                )
         
         with col3:
-            new_title = st.text_input(
-                "TOC Title",
-                value=pdf_file['toc_title'],
-                key=f"toc_{idx}",
-                label_visibility="collapsed"
-            )
-            st.session_state.pdf_files[idx]['toc_title'] = new_title
+            if st.button("➕ Add More Files", use_container_width=True,
+                        help="Upload additional PDFs to merge"):
+                st.info("👆 Use the file uploader above to add more PDFs")
         
-        with col4:
-            col_up, col_down, col_edit = st.columns(3)
-            with col_up:
-                if st.button("⬆️", key=f"up_{idx}", disabled=(idx == 0)):
-                    st.session_state.pdf_files[idx], st.session_state.pdf_files[idx - 1] = \
-                        st.session_state.pdf_files[idx - 1], st.session_state.pdf_files[idx]
-                    st.rerun()
-            with col_down:
-                if st.button("⬇️", key=f"down_{idx}", 
-                           disabled=(idx == len(st.session_state.pdf_files) - 1)):
-                    st.session_state.pdf_files[idx], st.session_state.pdf_files[idx + 1] = \
-                        st.session_state.pdf_files[idx + 1], st.session_state.pdf_files[idx]
-                    st.rerun()
-            with col_edit:
-                if st.button("✏️", key=f"edit_{idx}", help="Edit pages"):
-                    st.session_state.editing_file_idx = idx
-                    st.rerun()
+        st.markdown("---")
         
-        with col5:
-            if st.button("✖️", key=f"remove_{idx}", help="Remove this file"):
-                st.session_state.pdf_files.pop(idx)
-                st.rerun()
-    
-    st.markdown("---")
-    
-    # Action buttons
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("📥 Merge & Download PDF", type="primary", use_container_width=True):
-            with st.spinner("Processing PDF..."):
-                try:
-                    merged_pdf = merge_pdfs(
-                        st.session_state.pdf_files,
-                        add_toc=add_toc,
-                        page_num_position=page_num_position,
-                        start_num=start_page_num
-                    )
-                    
-                    st.download_button(
-                        label="⬇️ Download Merged PDF",
-                        data=merged_pdf,
-                        file_name="merged_document.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-                    st.success("✅ PDF merged successfully!")
-                except Exception as e:
-                    st.error(f"❌ Error merging PDFs: {str(e)}")
-    
-    with col2:
-        if st.button("🔄 Clear All", use_container_width=True, help="Remove all files"):
+        # Optional: Add page numbers or TOC
+        with st.expander("⚙️ Advanced Options (Page Numbers & TOC)"):
+            st.markdown("These options apply when downloading:")
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if st.button("📥 Download with Page Numbers", use_container_width=True):
+                    with st.spinner("Adding page numbers..."):
+                        try:
+                            writer = PdfWriter()
+                            for page_info in pdf_file['pages']:
+                                reader = PdfReader(BytesIO(page_info['bytes']))
+                                writer.add_page(reader.pages[0])
+                            output = BytesIO()
+                            writer.write(output)
+                            output.seek(0)
+                            
+                            numbered_pdf = add_page_numbers(
+                                output.read(), 
+                                page_num_position if page_num_position != 'none' else 'bottom-center',
+                                start_page_num
+                            )
+                            
+                            st.download_button(
+                                label="⬇️ Download Numbered PDF",
+                                data=numbered_pdf,
+                                file_name=f"numbered_{pdf_file['name']}",
+                                mime="application/pdf",
+                                use_container_width=True
+                            )
+                        except Exception as e:
+                            st.error(f"Error: {str(e)}")
+        
+        # Clear button at bottom
+        st.markdown("---")
+        if st.button("🔄 Start Over", use_container_width=False):
             st.session_state.pdf_files = []
             st.session_state.file_uploader_key += 1
-            st.session_state.editing_file_idx = None
             st.rerun()
+    
+    else:
+        # MULTIPLE FILES MODE - Emphasize merging
+        st.markdown("#### Your Files:")
+        
+        for idx, pdf_file in enumerate(st.session_state.pdf_files):
+            with st.container():
+                col1, col2, col3, col4 = st.columns([0.5, 4, 2, 1.5])
+                
+                with col1:
+                    st.markdown(f"**#{idx + 1}**")
+                
+                with col2:
+                    st.markdown(f"**{pdf_file['name']}**")
+                    st.caption(f"{len(pdf_file['pages'])} pages")
+                
+                with col3:
+                    new_title = st.text_input(
+                        "TOC Title",
+                        value=pdf_file['toc_title'],
+                        key=f"toc_{idx}",
+                        label_visibility="collapsed",
+                        placeholder="Table of Contents title"
+                    )
+                    st.session_state.pdf_files[idx]['toc_title'] = new_title
+                
+                with col4:
+                    subcol1, subcol2, subcol3, subcol4 = st.columns(4)
+                    
+                    with subcol1:
+                        if st.button("⬆️", key=f"up_{idx}", disabled=(idx == 0), 
+                                   help="Move up"):
+                            st.session_state.pdf_files[idx], st.session_state.pdf_files[idx - 1] = \
+                                st.session_state.pdf_files[idx - 1], st.session_state.pdf_files[idx]
+                            st.rerun()
+                    
+                    with subcol2:
+                        if st.button("⬇️", key=f"down_{idx}", 
+                                   disabled=(idx == len(st.session_state.pdf_files) - 1),
+                                   help="Move down"):
+                            st.session_state.pdf_files[idx], st.session_state.pdf_files[idx + 1] = \
+                                st.session_state.pdf_files[idx + 1], st.session_state.pdf_files[idx]
+                            st.rerun()
+                    
+                    with subcol3:
+                        if st.button("✏️", key=f"edit_{idx}", help="Edit pages"):
+                            st.session_state.editing_file_idx = idx
+                            st.rerun()
+                    
+                    with subcol4:
+                        if st.button("✖️", key=f"remove_{idx}", help="Remove"):
+                            st.session_state.pdf_files.pop(idx)
+                            st.rerun()
+                
+                st.markdown("---")
+        
+        # Action buttons for multiple files
+        st.markdown("#### Merge Your PDFs:")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("📥 Merge & Download All", type="primary", use_container_width=True):
+                with st.spinner("Merging PDFs..."):
+                    try:
+                        merged_pdf = merge_pdfs(
+                            st.session_state.pdf_files,
+                            add_toc=add_toc,
+                            page_num_position=page_num_position,
+                            start_num=start_page_num
+                        )
+                        
+                        st.download_button(
+                            label="⬇️ Download Merged PDF",
+                            data=merged_pdf,
+                            file_name="merged_document.pdf",
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
+                        st.success("✅ PDF merged successfully!")
+                    except Exception as e:
+                        st.error(f"❌ Error merging PDFs: {str(e)}")
+        
+        with col2:
+            if st.button("🔄 Clear All", use_container_width=True, help="Remove all files"):
+                st.session_state.pdf_files = []
+                st.session_state.file_uploader_key += 1
+                st.session_state.editing_file_idx = None
+                st.rerun()
 
 else:
     st.info("👆 Upload PDF files to get started")
