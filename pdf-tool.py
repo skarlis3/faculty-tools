@@ -318,74 +318,21 @@ elif st.session_state.pdf_files:
         
         st.markdown("#### What would you like to do?")
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         
         with col1:
             if st.button("✏️ Edit Pages", type="primary", use_container_width=True, 
-                        help="Reorder or remove pages"):
+                        help="Reorder, remove pages, or add page numbers"):
                 st.session_state.editing_file_idx = 0
                 st.rerun()
         
         with col2:
-            if st.button("💾 Download As-Is", use_container_width=True,
-                        help="Download without changes"):
-                writer = PdfWriter()
-                for page_info in pdf_file['pages']:
-                    reader = PdfReader(BytesIO(page_info['bytes']))
-                    writer.add_page(reader.pages[0])
-                output = BytesIO()
-                writer.write(output)
-                output.seek(0)
-                
-                st.download_button(
-                    label="⬇️ Download PDF",
-                    data=output.read(),
-                    file_name=pdf_file['name'],
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-        
-        with col3:
-            if st.button("➕ Add More Files", use_container_width=True,
-                        help="Upload additional PDFs to merge"):
+            if st.button("➕ Add More Files to Merge", use_container_width=True,
+                        help="Upload additional PDFs to combine"):
                 st.info("👆 Use the file uploader above to add more PDFs")
         
         st.markdown("---")
-        
-        # Optional: Add page numbers or TOC
-        with st.expander("⚙️ Advanced Options (Page Numbers & TOC)"):
-            st.markdown("These options apply when downloading:")
-            col_a, col_b = st.columns(2)
-            with col_a:
-                if st.button("📥 Download with Page Numbers", use_container_width=True):
-                    with st.spinner("Adding page numbers..."):
-                        try:
-                            writer = PdfWriter()
-                            for page_info in pdf_file['pages']:
-                                reader = PdfReader(BytesIO(page_info['bytes']))
-                                writer.add_page(reader.pages[0])
-                            output = BytesIO()
-                            writer.write(output)
-                            output.seek(0)
-                            
-                            numbered_pdf = add_page_numbers(
-                                output.read(), 
-                                page_num_position if page_num_position != 'none' else 'bottom-center',
-                                start_page_num
-                            )
-                            
-                            st.download_button(
-                                label="⬇️ Download Numbered PDF",
-                                data=numbered_pdf,
-                                file_name=f"numbered_{pdf_file['name']}",
-                                mime="application/pdf",
-                                use_container_width=True
-                            )
-                        except Exception as e:
-                            st.error(f"Error: {str(e)}")
-        
-        # Clear button at bottom
-        st.markdown("---")
+        st.caption("💡 Tip: Click 'Edit Pages' to reorder, remove pages, or download with page numbers")
         if st.button("🔄 Start Over", use_container_width=False):
             st.session_state.pdf_files = []
             st.session_state.file_uploader_key += 1
