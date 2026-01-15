@@ -235,9 +235,6 @@ with st.expander("How to Use This Tool", expanded=(st.session_state.current_step
         <span>Download your accessible PDF</span>
     </div>
     </div>
-    """, unsafe_allow_html=True)ectly identified<br>
-    <span class="step-number">4</span> Download your accessible PDF
-    </div>
     """, unsafe_allow_html=True)
 
 st.markdown("---")
