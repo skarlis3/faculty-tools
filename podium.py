@@ -345,15 +345,15 @@ elif st.session_state.mode == 'focus':
             grid-template-columns: 1fr 1fr;
             gap: 40px;
             width: 90%;
-            max-width: 1200px;
+            max-width: 1400px;
         }}
         .card {{
             background: rgba(13, 17, 23, 0.6);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(56, 189, 248, 0.2);
             border-radius: 12px;
-            padding: 30px;
-            height: 300px;
+            padding: 40px;
+            min-height: 350px;
             display: flex;
             flex-direction: column;
             justify-content: flex-start; 
@@ -361,42 +361,43 @@ elif st.session_state.mode == 'focus':
             transition: all 0.5s ease;
         }}
         .card-header {{
-            font-size: 1.1em;
+            font-size: clamp(1.2em, 2vw, 1.8em);
             color: #38bdf8;
             text-transform: uppercase;
             letter-spacing: 2px;
             border-bottom: 1px solid rgba(56, 189, 248, 0.2);
-            padding-bottom: 10px;
-            position: absolute;
-            top: 25px;
-            left: 30px;
-            right: 30px;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
         }}
         .content-box {{ 
-            margin-top: 60px; 
+            margin-top: 10px; 
         }}
         ul {{
-            font-size: 1.25em;
-            font-weight: 200;
-            color: #e2e8f0;
-            line-height: 1.6;
-            padding-left: 20px;
+            font-size: clamp(1.4em, 2.2vw, 2em);
+            font-weight: 300;
+            color: #f1f5f9;
+            line-height: 1.8;
+            padding-left: 25px;
+            margin: 0;
+        }}
+        ul li {{
+            margin-bottom: 12px;
         }}
         #timer {{
-            font-size: 1.2em;
-            font-weight: 200;
-            color: #7dd3fc;
+            font-size: clamp(2em, 3.5vw, 3em);
+            font-weight: 300;
+            color: #ffffff;
             text-align: center;
-            opacity: 0.7;
-            margin-top: 80px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            margin-top: 40px;
             transition: all 0.5s ease;
         }}
         #progress-container {{
             width: 100%;
-            background-color: rgba(56, 189, 248, 0.1);
-            height: 4px;
-            border-radius: 2px;
-            margin-top: 20px;
+            background-color: rgba(56, 189, 248, 0.15);
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 30px;
             overflow: hidden;
         }}
         #progress-bar {{
@@ -405,9 +406,25 @@ elif st.session_state.mode == 'focus':
             width: 0%;
             transition: width 0.3s linear;
         }}
+        
+        /* Completion pulse animation */
+        @keyframes gentle-pulse {{
+            0%, 100% {{
+                box-shadow: 0 0 20px rgba(134, 239, 172, 0.3),
+                            0 0 40px rgba(134, 239, 172, 0.1);
+                border-color: rgba(134, 239, 172, 0.5);
+            }}
+            50% {{
+                box-shadow: 0 0 40px rgba(134, 239, 172, 0.5),
+                            0 0 80px rgba(134, 239, 172, 0.2);
+                border-color: rgba(134, 239, 172, 0.8);
+            }}
+        }}
+        
         .complete {{
-            border-color: rgba(134, 239, 172, 0.4) !important;
-            background: rgba(13, 17, 23, 0.8) !important;
+            border-color: rgba(134, 239, 172, 0.5) !important;
+            background: rgba(13, 17, 23, 0.85) !important;
+            animation: gentle-pulse 2s ease-in-out infinite;
         }}
         .complete .card-header {{
             color: #86efac !important;
@@ -415,11 +432,15 @@ elif st.session_state.mode == 'focus':
         }}
         .complete #timer {{
             color: #86efac !important;
-            font-size: 1.4em !important;
-            opacity: 1 !important;
+            font-size: clamp(2.2em, 4vw, 3.5em) !important;
+            text-shadow: 0 0 30px rgba(134, 239, 172, 0.5) !important;
         }}
         .complete #progress-bar {{
             background-color: #22c55e !important;
+        }}
+        .prompt-complete {{
+            color: #86efac !important;
+            text-shadow: 0 0 30px rgba(134, 239, 172, 0.4) !important;
         }}
     </style>
     </head>
@@ -447,11 +468,6 @@ elif st.session_state.mode == 'focus':
             </div>
         </div>
         
-        <!-- Gentle chime audio (soft sine wave tone) -->
-        <audio id="chime" preload="auto">
-            <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhImMj5KVmJudoKOmp6mrra+xsrS1tre4ubq7u7y8vb29vr6+v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/vr69vby7urm4t7a1s7KwrqyqqKakopybmJWRjouHhIB9enZzb2xpZWJeW1dUUU1KRkM/Ozo4NTMwLiwnJSMhHxwaGBYUEhAODAoIBgQCAP7+/fz7+vn5+Pf39vb19PTz8vLx8PDv7u7t7Ozr6uno5+fm5eTk4+Pi4eHg4N/f3t7e3d3d3Nzb29va2tra2dnZ2NjY2NjX19fX19fX19fX19fX2NjY2dnZ2dra2tvb3Nzc3d3e3t/f4ODh4eLi4+Pk5OXl5ufo6Onp6uvs7O3u7+/w8PHy8vP09fX29/j5+fr7/P3+/wABAgQGBwkLDQ8RExUXGhweICMlKCsuMDM2ODs+QURHSkxQU1ZZXGBjZ2pucnV4fICDhomMj5OWmZyfoqWoq62wsbO1t7i6u7y+v8DBwsPExcbHx8jJycrKy8vMzM3Nzs7Ozs/Pz8/Pz8/Pz8/Pzs7Ozs3NzMzLy8rJyMfGxcTDwb+9vLq4trSyr6yqpqOgm5iVkYyIhH98dnJua2djXltXT0tHQz86NjIsKCQgHBgUEQwJBQH+/Pn29PLv7enm5OHf3Nna19XU0tHPz87NzMvKycnIx8fGxsbGxsbGxsfHx8jIycnKyszMzc7P0NHS09TV1tfY2drc3d7g4ePk5ujp6+3u8PHy9Pb3+fv8/v8AAwUHCQsOEBMVFxocHyEkJykrLjEzNjg7PT9CSUxPUlRXWV1gY2ZqbXBydn2Ag4aKjZGUl5qeoaOmqayvsLK0trjZu72/wMLDxcbIycvMzc/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ebo6err7O7v8fLz9fb4+fr7/f4AAgQGCAoMDxESFBYZGx4gIyUnKi0vMTQ2OTs+QENFSEtOUFNVWFtdYGNmYWpta3J1eHt/goWIi5CSlZicn6OmqaysrrC1tri6vMDCxMbIyszO0NHT1dbY2tvc3t/h4uTl5+jp6+zu8PLz9ff5+vz+/wEDBQcJCw0PERMWGBocHyEjJSgqLC8xMzU4Ojs9QENLTU9RVFZYWl1fYmRmaWxucHN1eHp9gIOGiIqNj5KUl5mcn6Gjpaiqq62vsLK0tba4uru9v8DBw8TGx8nKzM3Oz9DR09TW19na29ze3+Hi5OXn6evs7u/x8vT19/n6/f4AAgQGCAsMDhAUFhgaHSAiJCYoKy0vMTQ2ODo8Pj9BQ0VHSUpMTlBRU1VWWFlbXF5fYWJkZWdoamt" type="audio/wav">
-        </audio>
-        
         <script>
             const totalMinutes = {total_minutes};
             const totalSeconds = totalMinutes * 60;
@@ -462,7 +478,6 @@ elif st.session_state.mode == 'focus':
             const barEl = document.getElementById('progress-bar');
             const timerCard = document.getElementById('timer-card');
             const promptEl = document.getElementById('prompt');
-            const chimeAudio = document.getElementById('chime');
             
             function getFuzzyTime(seconds) {{
                 let minutes = seconds / 60;
@@ -477,9 +492,68 @@ elif st.session_state.mode == 'focus':
                 return "Time to wrap up";
             }}
             
+            // Web Audio API for a clean, gentle chime
             function playGentleChime() {{
-                chimeAudio.volume = 0.2;  // Very soft volume
-                chimeAudio.play().catch(e => console.log("Audio play blocked:", e));
+                try {{
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Create two oscillators for a richer tone
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    
+                    // Pleasant frequencies (C5 and E5 for a major third)
+                    osc1.frequency.value = 523.25;  // C5
+                    osc2.frequency.value = 659.25;  // E5
+                    osc1.type = 'sine';
+                    osc2.type = 'sine';
+                    
+                    // Connect oscillators through gain
+                    osc1.connect(gainNode);
+                    osc2.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    // Gentle envelope - fade in and out
+                    const now = audioCtx.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(0.15, now + 0.1);  // Soft attack
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.5);  // Long decay
+                    
+                    // Play the chime
+                    osc1.start(now);
+                    osc2.start(now);
+                    osc1.stop(now + 1.5);
+                    osc2.stop(now + 1.5);
+                    
+                    // Play a second chime after a pause
+                    setTimeout(() => {{
+                        const osc3 = audioCtx.createOscillator();
+                        const osc4 = audioCtx.createOscillator();
+                        const gainNode2 = audioCtx.createGain();
+                        
+                        osc3.frequency.value = 659.25;  // E5
+                        osc4.frequency.value = 783.99;  // G5
+                        osc3.type = 'sine';
+                        osc4.type = 'sine';
+                        
+                        osc3.connect(gainNode2);
+                        osc4.connect(gainNode2);
+                        gainNode2.connect(audioCtx.destination);
+                        
+                        const now2 = audioCtx.currentTime;
+                        gainNode2.gain.setValueAtTime(0, now2);
+                        gainNode2.gain.linearRampToValueAtTime(0.12, now2 + 0.1);
+                        gainNode2.gain.exponentialRampToValueAtTime(0.01, now2 + 2);
+                        
+                        osc3.start(now2);
+                        osc4.start(now2);
+                        osc3.stop(now2 + 2);
+                        osc4.stop(now2 + 2);
+                    }}, 600);
+                    
+                }} catch (e) {{
+                    console.log("Web Audio not supported:", e);
+                }}
             }}
             
             const interval = setInterval(() => {{
@@ -493,12 +567,12 @@ elif st.session_state.mode == 'focus':
                     completed = true;
                     clearInterval(interval);
                     
-                    // Gentle visual transition
+                    // Visual transition with pulsing animation
                     timerEl.innerText = "Time to wrap up";
                     timerCard.classList.add('complete');
-                    promptEl.style.color = "#86efac";
+                    promptEl.classList.add('prompt-complete');
                     
-                    // Play soft chime
+                    // Play gentle two-tone chime
                     playGentleChime();
                 }}
             }}, 1000);
