@@ -330,7 +330,7 @@ elif st.session_state.mode == 'focus':
             height: 800px;
         }}
         .prompt {{
-            font-size: 2.5em;
+            font-size: clamp(2em, 3vw, 2.5em)
             color: #ffffff;
             text-align: center;
             margin-top: 50px;
