@@ -373,7 +373,7 @@ elif st.session_state.mode == 'focus':
             margin-top: 10px; 
         }}
         ul {{
-            font-size: clamp(1.4em, 2.2vw, 2em);
+            font-size: clamp(1.4em, 2.2vw, 1.7em);
             font-weight: 300;
             color: #f1f5f9;
             line-height: 1.8;
@@ -384,7 +384,7 @@ elif st.session_state.mode == 'focus':
             margin-bottom: 12px;
         }}
         #timer {{
-            font-size: clamp(1.4em, 2.2vw, 2em);
+            font-size: clamp(1.4em, 2.2vw, 1.7em);
             font-weight: 300;
             color: #ffffff;
             text-align: center;
