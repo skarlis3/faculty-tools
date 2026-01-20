@@ -375,7 +375,7 @@ elif st.session_state.mode == 'focus':
         ul {{
             font-size: clamp(1.4em, 2.1vw, 1.6em);
             font-weight: 300;
-            color: #f1f5f9;
+            color: #cde2f7;
             line-height: 1.8;
             padding-left: 25px;
             margin: 0;
@@ -386,7 +386,7 @@ elif st.session_state.mode == 'focus':
         #timer {{
             font-size: clamp(1.4em, 2.1vw, 1.6em);
             font-weight: 300;
-            color: #ffffff;
+            color: #cde2f7;
             text-align: center;
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
             margin-top: 40px;
