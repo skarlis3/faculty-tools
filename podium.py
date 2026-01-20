@@ -453,7 +453,7 @@ elif st.session_state.mode == 'focus':
                     <ul>
                         <li>Put all technology away.</li>
                         <li>Keep your pen moving.</li>
-                        <li>If stuck, write "I am stuck".</li>
+                        <li>If stuck, write "I am stuck" or "I'm not sure what to write" until you get unstuck.</li>
                     </ul>
                 </div>
             </div>
