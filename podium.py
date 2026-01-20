@@ -384,7 +384,7 @@ elif st.session_state.mode == 'focus':
             margin-bottom: 12px;
         }}
         #timer {{
-            font-size: clamp(2em, 3.5vw, 3em);
+            font-size: clamp(1.5em, 3vw, 2em);
             font-weight: 300;
             color: #ffffff;
             text-align: center;
