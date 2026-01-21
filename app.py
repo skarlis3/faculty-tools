@@ -684,15 +684,14 @@ elif tool_choice == "Door Sign Generator":
         text-transform: uppercase;
         color: #37474f;
         margin-bottom: 24px;
-        padding-bottom: 12px;
-        border-bottom: 2px solid #90a4ae;
     }}
     .calendar {{
         display: grid;
         grid-template-columns: 60px repeat({num_day_cols}, 1fr);
-        grid-template-rows: 35px repeat({total_slots}, 1fr);
+        grid-template-rows: 35px repeat({total_slots}, minmax(18px, 1fr));
         width: 100%;
         max-width: 850px;
+        min-height: 75vh;
         border: none;
     }}
     .header {{
