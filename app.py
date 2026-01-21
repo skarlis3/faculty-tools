@@ -312,7 +312,7 @@ elif tool_choice == "Door Sign Generator":
     
     oh_text = st.text_input(
         "2. Office Hours:",
-        placeholder="M-Th 11-1, Fri 9-10 or Mon/Wed 10-12, Virtual Mon-Tue 5-6"
+        placeholder="e.g., M-Th 11-1, Fri 9-10 | Mon/Wed 10-12, Virtual Tue 5-6 | Monday: 11 AM-12 PM; Tuesday: 2-3 PM (virtual)"
     )
     
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
@@ -410,55 +410,177 @@ elif tool_choice == "Door Sign Generator":
                             "loc": loc
                         })
 
-            # Parse Office Hours
+            # Parse Office Hours - flexible parser for multiple formats
+            # Supported formats:
+            # - "M-Th 11-1, Fri 9-10"
+            # - "Mon/Wed 10-12, Virtual Mon-Tue 5-6"
+            # - "Monday: 11 AM-12 PM, 2-3 PM (in-person); 5-6 PM (virtual)"
+            # - "Tuesday: 11 AM-12 PM (in-person); 5-6 PM (virtual)"
+            
             day_map_list = ['M', 'T', 'W', 'Th', 'F']
             day_name_to_idx = {
-                'MON': 0, 'M': 0,
-                'TUE': 1, 'T': 1,
-                'WED': 2, 'W': 2,
-                'THU': 3, 'TH': 3, 'R': 3,
-                'FRI': 4, 'F': 4
+                'MONDAY': 0, 'MON': 0, 'M': 0,
+                'TUESDAY': 1, 'TUE': 1, 'T': 1,
+                'WEDNESDAY': 2, 'WED': 2, 'W': 2,
+                'THURSDAY': 3, 'THU': 3, 'TH': 3, 'R': 3,
+                'FRIDAY': 4, 'FRI': 4, 'F': 4
             }
-
-            for part in oh_text.split(','):
-                part = part.strip()
-                if not part:
-                    continue
-                    
-                is_virtual = "virtual" in part.lower()
-                search_string = part.upper().replace("VIRTUAL", "")
+            
+            def parse_oh_time_flexible(time_str):
+                """Parse time in various formats: '11 AM', '11:00 AM', '11', '2-3 PM', etc."""
+                time_str = time_str.strip().upper()
                 
-                # Parse day range
-                range_match = re.search(r'([A-Z]+)\s*-\s*([A-Z]+)', search_string)
+                # Handle "11 AM", "11:00 AM", "2 PM", "2:30 PM"
+                match = re.match(r'(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?', time_str)
+                if match:
+                    h = int(match.group(1))
+                    m = int(match.group(2)) if match.group(2) else 0
+                    period = match.group(3)
+                    
+                    if period == 'PM' and h != 12:
+                        h += 12
+                    elif period == 'AM' and h == 12:
+                        h = 0
+                    elif period is None:
+                        # No AM/PM - assume PM for typical office hours (1-7)
+                        if 1 <= h <= 7:
+                            h += 12
+                    
+                    return h * 60 + m
+                return 0
+            
+            def extract_time_ranges(text, inherit_period=None):
+                """Extract all time ranges from text, returns list of (start_min, end_min, is_virtual)"""
+                ranges = []
+                text_upper = text.upper()
+                is_virtual = 'VIRTUAL' in text_upper
+                
+                # Pattern for "11 AM-12 PM", "11:00 AM - 12:00 PM", "2-3 PM", "5-6 PM"
+                time_range_pattern = r'(\d{1,2}(?::\d{2})?\s*(?:AM|PM)?)\s*[-–—]\s*(\d{1,2}(?::\d{2})?\s*(?:AM|PM)?)'
+                
+                for match in re.finditer(time_range_pattern, text, re.IGNORECASE):
+                    start_str = match.group(1).strip()
+                    end_str = match.group(2).strip()
+                    
+                    # If end has AM/PM but start doesn't, inherit it
+                    end_period_match = re.search(r'(AM|PM)', end_str, re.IGNORECASE)
+                    start_period_match = re.search(r'(AM|PM)', start_str, re.IGNORECASE)
+                    
+                    if end_period_match and not start_period_match:
+                        # Append the period to start time for parsing
+                        start_str = start_str + ' ' + end_period_match.group(1)
+                    
+                    s_min = parse_oh_time_flexible(start_str)
+                    e_min = parse_oh_time_flexible(end_str)
+                    
+                    if e_min <= s_min:
+                        e_min += 12 * 60  # Assume crossed noon
+                    
+                    if s_min > 0 and e_min > s_min:
+                        ranges.append((s_min, e_min, is_virtual))
+                
+                return ranges
+            
+            def extract_days(text):
+                """Extract days from text, handling various formats"""
+                text_upper = text.upper()
                 found_days = []
                 
+                # First check for day ranges like "M-TH", "MON-FRI", "MONDAY-THURSDAY"
+                range_pattern = r'\b(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|MON|TUE|WED|THU|FRI|M|T|W|TH|R|F)\s*[-–—]\s*(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|MON|TUE|WED|THU|FRI|M|T|W|TH|R|F)\b'
+                range_match = re.search(range_pattern, text_upper)
+                
                 if range_match:
-                    start_day_idx = day_name_to_idx.get(range_match.group(1))
-                    end_day_idx = day_name_to_idx.get(range_match.group(2))
-                    if start_day_idx is not None and end_day_idx is not None:
-                        found_days = day_map_list[start_day_idx:end_day_idx + 1]
-                else:
-                    for dname, dcode in day_name_to_idx.items():
-                        if dname in search_string:
-                            if day_map_list[dcode] not in found_days:
-                                found_days.append(day_map_list[dcode])
-
-                # Parse times
-                time_parts = re.findall(r'(\d{1,2}(?::\d{2})?)', part)
-                if len(time_parts) >= 2:
-                    s_min = parse_office_hours_time(time_parts[0])
-                    e_min = parse_office_hours_time(time_parts[1])
-                    if e_min <= s_min:
-                        e_min += 12 * 60
-                    
-                    events.append({
-                        "type": "oh",
-                        "name": "Virtual Office Hours" if is_virtual else "Office Hours",
-                        "days": found_days,
-                        "start": s_min,
-                        "end": e_min,
-                        "loc": ""
-                    })
+                    start_day = range_match.group(1)
+                    end_day = range_match.group(2)
+                    start_idx = day_name_to_idx.get(start_day)
+                    end_idx = day_name_to_idx.get(end_day)
+                    if start_idx is not None and end_idx is not None:
+                        return day_map_list[start_idx:end_idx + 1]
+                
+                # Check for slash-separated days like "Mon/Wed" or "M/W"
+                slash_pattern = r'\b(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|MON|TUE|WED|THU|FRI|M|T|W|TH|R|F)(?:\s*/\s*(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|MON|TUE|WED|THU|FRI|M|T|W|TH|R|F))+\b'
+                slash_match = re.search(slash_pattern, text_upper)
+                if slash_match:
+                    slash_text = slash_match.group(0)
+                    for day_name in re.split(r'\s*/\s*', slash_text):
+                        day_name = day_name.strip()
+                        if day_name in day_name_to_idx:
+                            d = day_map_list[day_name_to_idx[day_name]]
+                            if d not in found_days:
+                                found_days.append(d)
+                    if found_days:
+                        return found_days
+                
+                # Check for individual day names (full or abbreviated)
+                # Order matters - check longer names first
+                for day_name in ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 
+                                 'MON', 'TUE', 'WED', 'THU', 'FRI', 'TH']:
+                    if day_name in text_upper:
+                        d = day_map_list[day_name_to_idx[day_name]]
+                        if d not in found_days:
+                            found_days.append(d)
+                
+                # Only check single letters if no full names found
+                if not found_days:
+                    # Be careful with single letters - use word boundaries
+                    for letter, idx in [('M', 0), ('T', 1), ('W', 2), ('R', 3), ('F', 4)]:
+                        if re.search(rf'\b{letter}\b', text_upper):
+                            d = day_map_list[idx]
+                            if d not in found_days:
+                                found_days.append(d)
+                
+                return found_days
+            
+            # Split by semicolons first (separates different day groups)
+            # Then check for day labels with colons (like "Monday:")
+            oh_segments = []
+            
+            # Check if input uses "Day:" format (like from syllabus)
+            if re.search(r'\b(Monday|Tuesday|Wednesday|Thursday|Friday)\s*:', oh_text, re.IGNORECASE):
+                # Split by day labels
+                day_label_pattern = r'((?:Monday|Tuesday|Wednesday|Thursday|Friday)\s*:)'
+                parts = re.split(day_label_pattern, oh_text, flags=re.IGNORECASE)
+                
+                current_day = None
+                for part in parts:
+                    part = part.strip()
+                    if not part:
+                        continue
+                    if re.match(r'(Monday|Tuesday|Wednesday|Thursday|Friday)\s*:', part, re.IGNORECASE):
+                        current_day = part.rstrip(':').strip()
+                    elif current_day:
+                        # This part contains times for current_day
+                        # Split by semicolons for different time slots
+                        for time_slot in re.split(r';', part):
+                            time_slot = time_slot.strip()
+                            if time_slot:
+                                oh_segments.append(f"{current_day} {time_slot}")
+            else:
+                # Original format - split by comma or semicolon
+                for segment in re.split(r'[;,]', oh_text):
+                    segment = segment.strip()
+                    if segment:
+                        oh_segments.append(segment)
+            
+            # Process each segment
+            for segment in oh_segments:
+                if not segment:
+                    continue
+                
+                found_days = extract_days(segment)
+                time_ranges = extract_time_ranges(segment)
+                
+                for s_min, e_min, is_virtual in time_ranges:
+                    if found_days and s_min > 0:
+                        events.append({
+                            "type": "oh",
+                            "name": "Virtual Office Hours" if is_virtual else "Office Hours",
+                            "days": found_days,
+                            "start": s_min,
+                            "end": e_min,
+                            "loc": ""
+                        })
 
             # Generate HTML
             if events:
