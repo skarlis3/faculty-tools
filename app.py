@@ -607,11 +607,16 @@ elif tool_choice == "Door Sign Generator":
             else:
                 start_hr, end_hr = 9, 17
 
+            # Check if any events occur on Friday
+            has_friday = any('F' in ev['days'] for ev in events)
+            num_day_cols = 5 if has_friday else 4
+            day_headers = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] if has_friday else ['Mon', 'Tue', 'Wed', 'Thu']
+
             total_slots = (end_hr - start_hr) * 4
             html_events = ""
             colors_cool = ["#e8f4f8", "#e3f2fd", "#e0f2f1", "#f3e5f5", "#fff3e0", "#f1f8e9"]
             color_map = {}
-            col_map = {"M": 2, "T": 3, "W": 4, "Th": 5, "F": 6}
+            col_map = {"M": 2, "T": 3, "W": 4, "Th": 5, "F": 6} if has_friday else {"M": 2, "T": 3, "W": 4, "Th": 5}
             
             for ev in events:
                 start_off = ev['start'] - (start_hr * 60)
@@ -636,15 +641,15 @@ elif tool_choice == "Door Sign Generator":
                             f'<strong>{ev["name"]}</strong>{loc_h}</div>'
                         )
             
-            # Generate time labels
+            # Generate time labels (start from second hour to avoid overlap with header)
             html_times = ""
             for h in range(start_hr, end_hr + 1):
                 r = (h - start_hr) * 4 + 2
                 hour_label = f"{h % 12 or 12} {'AM' if h < 12 else 'PM'}"
-                html_times += (
-                    f'<div class="time-label" style="grid-row:{r};">{hour_label}</div>'
-                    f'<div class="grid-line" style="grid-row:{r};"></div>'
-                )
+                # Skip first time label to avoid header overlap
+                if h > start_hr:
+                    html_times += f'<div class="time-label" style="grid-row:{r};">{hour_label}</div>'
+                html_times += f'<div class="grid-line" style="grid-row:{r};"></div>'
 
             # Online classes section
             online_list = [f"{k}{v}" for k, v in online_data.items()]
@@ -655,6 +660,9 @@ elif tool_choice == "Door Sign Generator":
                     f"padding-top:10px; width:100%; max-width:850px; text-align:center;'>"
                     f"<strong>Online Classes:</strong><br>{', '.join(online_list)}</div>"
                 )
+            
+            # Build day headers HTML
+            day_headers_html = "\n        ".join([f'<div class="header">{d}</div>' for d in day_headers])
             
             # Final HTML
             final_html = f"""<!DOCTYPE html>
@@ -670,24 +678,30 @@ elif tool_choice == "Door Sign Generator":
     }}
     h1 {{
         text-align: center;
+        font-weight: 300;
+        font-size: 28px;
+        letter-spacing: 3px;
         text-transform: uppercase;
-        letter-spacing: 1.5px;
-        margin-bottom: 20px;
+        color: #37474f;
+        margin-bottom: 24px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #90a4ae;
     }}
     .calendar {{
         display: grid;
-        grid-template-columns: 60px repeat(5, 1fr);
+        grid-template-columns: 60px repeat({num_day_cols}, 1fr);
         grid-template-rows: 35px repeat({total_slots}, 1fr);
         width: 100%;
         max-width: 850px;
         border: none;
     }}
     .header {{
-        font-weight: bold;
+        font-weight: 600;
         text-align: center;
         border-bottom: 1px solid #ccc;
-        font-size: 16px;
+        font-size: 15px;
         padding-top: 5px;
+        color: #455a64;
     }}
     .time-label {{
         font-size: 10px;
@@ -697,7 +711,7 @@ elif tool_choice == "Door Sign Generator":
         transform: translateY(-50%);
     }}
     .grid-line {{
-        grid-column: 2 / span 5;
+        grid-column: 2 / span {num_day_cols};
         border-top: 1px solid #eee;
         height: 0;
     }}
@@ -721,11 +735,7 @@ elif tool_choice == "Door Sign Generator":
     <h1>{title_text}</h1>
     <div class="calendar">
         <div class="header" style="grid-column:1"></div>
-        <div class="header">Mon</div>
-        <div class="header">Tue</div>
-        <div class="header">Wed</div>
-        <div class="header">Thu</div>
-        <div class="header">Fri</div>
+        {day_headers_html}
         {html_times}
         {html_events}
     </div>
