@@ -310,10 +310,27 @@ elif tool_choice == "Door Sign Generator":
         placeholder="ENGL-1181-S1601\nM/W 12:00 PM - 1:55 PM\nENGL-1181-S1602\nM/W 12:00 PM - 1:55 PM"
     )
     
-    oh_text = st.text_input(
-        "2. Office Hours:",
-        placeholder="e.g., M-Th 11-1, Fri 9-10 | Mon/Wed 10-12, Virtual Tue 5-6 | Monday: 11 AM-12 PM; Tuesday: 2-3 PM (virtual)"
-    )
+    oh_col1, oh_col2 = st.columns([20, 1])
+    with oh_col1:
+        oh_text = st.text_input(
+            "2. Office Hours:",
+            placeholder="M-Th 11-1, Fri 9-10"
+        )
+    with oh_col2:
+        st.markdown("<div style='height: 32px'></div>", unsafe_allow_html=True)  # Spacer to align with input
+        st.popover("ℹ️").markdown("""
+**Supported formats:**
+
+• `M-Th 11-1, Fri 9-10`
+• `Mon/Wed 10-12`
+• `Virtual Tue 5-6`
+• `Monday: 11 AM-12 PM, 2-3 PM; 5-6 PM (virtual)`
+
+**Tips:**
+- Use commas or semicolons to separate time slots
+- Add "virtual" anywhere to mark virtual hours
+- Full day names or abbreviations both work
+""")
     
     title_text = st.text_input("3. Page Title:", value="Winter 2026 Schedule")
 
