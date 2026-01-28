@@ -151,7 +151,7 @@ const TOOLS = [
 
   {
     name: "Faculty Selection Schedule Tool",
-    url: "../tools/selection-tool.html",
+    url: "tools/selection-tool.html",
     icon: "files",
     description: "Tool to help organize and clean up faculty selection schedule spreadsheets."
   },
