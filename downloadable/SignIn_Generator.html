@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign-In Sheet Generator</title>
+    <style>
+        :root {
+            --bg-primary: #f5f5f7;
+            --bg-secondary: #ffffff;
+            --bg-input: #ffffff;
+            --border: #d1d1d6;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --accent: #0071e3;
+            --accent-hover: #0077ed;
+            --warning-bg: #fff9e6;
+            --warning-border: #f0d860;
+            --warning-text: #7a6200;
+            --error-bg: #ffecec;
+            --error-text: #c41e3a;
+            --success-bg: #e8f5e9;
+            --success-text: #2e7d32;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .icon {
+            opacity: 0.7;
+        }
+
+        .ferpa-notice {
+            background: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            color: var(--warning-text);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .ferpa-notice strong {
+            color: var(--warning-text);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        select,
+        textarea {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.6rem 0.8rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 180px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            padding-top: 0.3rem;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        input[type="radio"] {
+            accent-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: #ffffff;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+        }
+
+        button.secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        button.secondary:hover {
+            background: var(--bg-input);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 1.5rem 0;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .help-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .student-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .student-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .student-row input[type="text"] {
+            flex: 1;
+        }
+
+        .student-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .error-message {
+            background: var(--error-bg);
+            color: var(--error-text);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+
+        .success-message {
+            background: var(--success-bg);
+            color: var(--success-text);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+
+        .count-badge {
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: normal;
+            margin-left: 0.5rem;
+        }
+
+        /* Print preview iframe */
+        .preview-frame {
+            width: 100%;
+            height: 500px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: #fff;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            body {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="icon">✎</span> Sign-In Sheet Generator</h1>
+        
+        <div class="ferpa-notice">
+            <strong>⚿ Local Only:</strong> This runs entirely in your browser. Student names never leave your computer.
+        </div>
+
+        <!-- STEP 1: Input -->
+        <div id="step-input" class="step active">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="class-name">Class Name</label>
+                    <input type="text" id="class-name" value="" placeholder="e.g. ENGL 1170">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Sheet Type</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="sheet-type" value="notes" checked>
+                        First Week (With Notes)
+                    </label>
+                    <label>
+                        <input type="radio" name="sheet-type" value="standard">
+                        Standard (Sign-In Only)
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+                <label for="raw-names">Paste Student List (Messy copy/paste is fine)</label>
+                <textarea id="raw-names" placeholder="Paste from Self Service or Canvas People page..."></textarea>
+            </div>
+
+            <div class="button-row">
+                <button onclick="parseNames()">Parse Names →</button>
+            </div>
+
+            <div id="parse-error" class="error-message" style="display: none;"></div>
+        </div>
+
+        <!-- STEP 2: Review -->
+        <div id="step-review" class="step">
+            <h2>Review & Edit <span id="student-count" class="count-badge"></span></h2>
+            <p class="help-text">Uncheck to remove. Edit names as needed (Last, First format).</p>
+            
+            <div id="student-list" class="student-list"></div>
+
+            <div class="button-row">
+                <button class="secondary" onclick="goToStep('input')">← Start Over</button>
+                <button onclick="generateSheet()">Generate Sheet →</button>
+            </div>
+        </div>
+
+        <!-- STEP 3: Output -->
+        <div id="step-output" class="step">
+            <h2>Preview</h2>
+            
+            <iframe id="preview-frame" class="preview-frame"></iframe>
+
+            <div class="button-row">
+                <button class="secondary" onclick="goToStep('review')">← Back to Edit</button>
+                <button onclick="downloadSheet()">Download HTML</button>
+                <button onclick="printSheet()">Print</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Format current date as 27Jan2026
+        function getFormattedDate() {
+            const now = new Date();
+            const day = now.getDate();
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = months[now.getMonth()];
+            const year = now.getFullYear();
+            return `${day}${month}${year}`;
+        }
+
+        // Common name suffixes
+        const SUFFIXES = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v', '2nd', '3rd', '4th', '5th']);
+
+        // Store parsed students
+        let parsedStudents = [];
+        let finalHtml = '';
+
+        function goToStep(step) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById('step-' + step).classList.add('active');
+        }
+
+        function parseNames() {
+            const rawText = document.getElementById('raw-names').value;
+            const errorDiv = document.getElementById('parse-error');
+            
+            parsedStudents = parseStudentNames(rawText);
+            
+            if (parsedStudents.length === 0) {
+                errorDiv.textContent = 'No student names found. Check your paste and try again.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            errorDiv.style.display = 'none';
+            renderStudentList();
+            goToStep('review');
+        }
+
+        function parseStudentNames(rawText) {
+            const students = [];
+            const seenNames = new Set();
+            const lines = rawText.split('\n');
+
+            // Patterns that indicate a line is NOT a name
+            const skipPatterns = [
+                /^\s*$/,                                    // Empty lines
+                /^Student Photo/i,                          // Self Service artifact
+                /^Profile Picture/i,                        // Canvas header
+                /^\d{6,}$/,                                 // Standalone student IDs
+                /^\d{1,2}\/\d{1,2}\/\d{2,4}$/,             // Dates
+                /@.*\.(edu|com|org|net)/i,                 // Email addresses
+                /^(She|He|They|Ze|Xe|Fae)\//i,             // Pronouns
+                /^\d+(st|nd|rd|th)\s+Year/i,               // Class level
+                /^Student$/i,                               // Canvas role
+                /^Teacher$/i,                               // Canvas teacher role
+                /^Si\s*Leader$/i,                           // Canvas SI leader role
+                /^ENGL\s*\d{4}/i,                           // Section codes
+                /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d/i,  // Timestamps
+                /at\s+\d{1,2}:\d{2}\s*[ap]m/i,             // Time fragments
+                /^\d{1,2}:\d{2}(:\d{2})?$/,                // Activity duration
+                /^(Name|SIS ID|Section|Role|Last Activity|Total Activity|Administrative Links)$/i,
+                /^(Preferred Email|Enroll Date|Class Level|Student Name|Student ID)$/i,
+                /Student\s+Name.*Student\s+ID/i,           // Tab-separated header
+                /Student\s+ID.*Student\s+Name/i,           // Header alternate
+                /^Use\s+my\s+name/i,                        // Pronoun note
+            ];
+
+            // First pass: identify non-student roles
+            const excludedNames = new Set();
+            for (let i = 0; i < lines.length; i++) {
+                const lineStripped = lines[i].trim().toLowerCase();
+                if (lineStripped === 'teacher' || lineStripped === 'si leader') {
+                    // Look back up to 4 lines to find the name
+                    for (let j = Math.max(0, i - 4); j < i; j++) {
+                        let candidate = lines[j].trim();
+                        candidate = candidate.replace(/\t.*$/, '');
+                        candidate = candidate.replace(/\d{6,}$/, '').trim();
+                        candidate = candidate.replace(/\s*\([^)]*\)\s*$/, '').trim();
+                        if (candidate && candidate.length > 2 && !/^[\d\s]+$/.test(candidate)) {
+                            excludedNames.add(candidate.toLowerCase());
+                        }
+                    }
+                }
+            }
+
+            // Second pass: parse student names
+            for (let line of lines) {
+                line = line.trim();
+
+                // Skip lines matching noise patterns
+                let shouldSkip = false;
+                for (const pattern of skipPatterns) {
+                    if (pattern.test(line)) {
+                        shouldSkip = true;
+                        break;
+                    }
+                }
+                if (shouldSkip) continue;
+
+                // Exclude dropped students
+                if (/\(Dropped/i.test(line)) continue;
+
+                // Clean up the line
+                line = line.replace(/\t.*$/, '').trim();           // Remove after tab
+                line = line.replace(/\d{6,}$/, '').trim();         // Remove trailing ID
+                line = line.replace(/\s*\([^)]*\)\s*$/, '').trim(); // Remove parenthetical pronouns
+
+                // Skip if too short or just numbers
+                if (line.length < 2 || /^[\d\s]+$/.test(line)) continue;
+
+                // Check if excluded
+                const normalized = line.toLowerCase().trim();
+                if (excludedNames.has(normalized)) continue;
+
+                // Deduplicate
+                if (seenNames.has(normalized)) continue;
+                seenNames.add(normalized);
+
+                // Parse the name
+                if (line.includes(',')) {
+                    const parts = line.split(',');
+                    const potentialLast = parts[0].trim();
+                    const afterComma = parts.slice(1).join(',').trim();
+
+                    const firstWordAfter = afterComma.split(/\s+/)[0]?.toLowerCase() || '';
+
+                    if (SUFFIXES.has(firstWordAfter)) {
+                        // "First Middle Last, Suffix" format
+                        const nameParts = potentialLast.split(/\s+/);
+                        if (nameParts.length >= 2) {
+                            const last = nameParts[nameParts.length - 1];
+                            const first = nameParts[0];
+                            const lastWithSuffix = `${last} ${afterComma}`;
+                            students.push({
+                                last: last,
+                                first: first,
+                                display: `${lastWithSuffix}, ${first}`
+                            });
+                        } else {
+                            students.push({
+                                last: potentialLast,
+                                first: '',
+                                display: `${potentialLast} ${afterComma}`
+                            });
+                        }
+                    } else {
+                        // Standard "Last, First" format
+                        const last = potentialLast;
+                        const firstParts = afterComma.split(/\s+/);
+                        const first = firstParts[0] || '';
+                        students.push({
+                            last: last,
+                            first: first,
+                            display: `${last}, ${first}`
+                        });
+                    }
+                } else {
+                    // "First Last" or "First Last Suffix" format
+                    const parts = line.split(/\s+/);
+
+                    if (parts.length >= 2) {
+                        if (SUFFIXES.has(parts[parts.length - 1].toLowerCase())) {
+                            // Has suffix
+                            if (parts.length >= 3) {
+                                const last = parts[parts.length - 2];
+                                const suffix = parts[parts.length - 1];
+                                const first = parts[0];
+                                students.push({
+                                    last: last,
+                                    first: first,
+                                    display: `${last} ${suffix}, ${first}`
+                                });
+                            } else {
+                                students.push({
+                                    last: parts[0],
+                                    first: '',
+                                    display: `${parts[0]} ${parts[1]}`
+                                });
+                            }
+                        } else {
+                            const last = parts[parts.length - 1];
+                            const first = parts[0];
+                            students.push({
+                                last: last,
+                                first: first,
+                                display: `${last}, ${first}`
+                            });
+                        }
+                    } else if (parts.length === 1) {
+                        students.push({
+                            last: parts[0],
+                            first: '',
+                            display: parts[0]
+                        });
+                    }
+                }
+            }
+
+            // Sort by last name
+            students.sort((a, b) => a.last.toLowerCase().localeCompare(b.last.toLowerCase()));
+            return students;
+        }
+
+        function renderStudentList() {
+            const container = document.getElementById('student-list');
+            document.getElementById('student-count').textContent = parsedStudents.length + ' students';
+            
+            container.innerHTML = parsedStudents.map((student, i) => `
+                <div class="student-row">
+                    <input type="checkbox" id="include-${i}" checked>
+                    <input type="text" id="name-${i}" value="${escapeHtml(student.display)}">
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function generateSheet() {
+            const className = document.getElementById('class-name').value;
+            const includeNotes = document.querySelector('input[name="sheet-type"]:checked').value === 'notes';
+
+            // Gather edited students
+            const editedStudents = [];
+            parsedStudents.forEach((student, i) => {
+                const include = document.getElementById('include-' + i).checked;
+                const editedName = document.getElementById('name-' + i).value.trim();
+
+                if (include && editedName) {
+                    let last, first;
+                    if (editedName.includes(',')) {
+                        const parts = editedName.split(',');
+                        last = parts[0].trim();
+                        first = parts[1]?.trim().split(/\s+/)[0] || '';
+                    } else {
+                        const parts = editedName.split(/\s+/);
+                        last = parts[parts.length - 1] || '';
+                        first = parts[0] || '';
+                    }
+                    editedStudents.push({ last, first, display: editedName });
+                }
+            });
+
+            // Sort again
+            editedStudents.sort((a, b) => a.last.toLowerCase().localeCompare(b.last.toLowerCase()));
+
+            // Generate HTML
+            finalHtml = generateHtml(editedStudents, className, includeNotes);
+
+            // Show in iframe
+            const iframe = document.getElementById('preview-frame');
+            iframe.srcdoc = finalHtml;
+
+            goToStep('output');
+        }
+
+        function generateHtml(students, className, includeNotes) {
+            const noteCol = includeNotes ? `<th style="width:30%;">Notes</th>` : '';
+            const noteCell = includeNotes ? `<td></td>` : '';
+            const nameWidth = includeNotes ? '35%' : '40%';
+            const sigWidth = includeNotes ? '35%' : '60%';
+
+            const rows = students.map(s => `
+                <tr>
+                    <td class="name-col">${escapeHtml(s.display)}</td>
+                    <td></td>
+                    ${noteCell}
+                </tr>
+            `).join('');
+
+            // Blank rows for walk-ins
+            const blankRows = Array(3).fill(`
+                <tr>
+                    <td></td>
+                    <td></td>
+                    ${noteCell}
+                </tr>
+            `).join('');
+
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>${className} Sign-In</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; color: #000; padding: 20px 40px; background: #fff; font-size: 12px; font-weight: 400; }
+        .container { max-width: 550px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 4px; font-size: 16px; font-weight: 500; }
+        .date-line { margin: 6px 0 12px 0; font-size: 12px; font-weight: 400; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f0f0f0; font-weight: 500; font-size: 12px; }
+        td, th { border: 1px solid #666; padding: 6px 8px; text-align: left; }
+        td { height: 26px; font-weight: 400; }
+        .name-col { width: 35%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+    <h1>${escapeHtml(className)} — Sign In</h1>
+    <div class="date-line">Date: _________________________________________</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:${nameWidth};">Student Name</th>
+                <th style="width:${sigWidth};">Signature</th>
+                ${noteCol}
+            </tr>
+        </thead>
+        <tbody>
+            ${rows}
+            ${blankRows}
+        </tbody>
+    </table>
+    </div>
+</body>
+</html>`;
+        }
+
+        function downloadSheet() {
+            const className = document.getElementById('class-name').value.replace(/\s+/g, '_');
+            const filename = `SignIn_${className}_updated_${getFormattedDate()}.html`;
+
+            const blob = new Blob([finalHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function printSheet() {
+            const iframe = document.getElementById('preview-frame');
+            iframe.contentWindow.print();
+        }
+    </script>
+</body>
+</html>
