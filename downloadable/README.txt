@@ -1,1 +1,0 @@
-For any downloadable web apps, download the file to your computer and open it in a browser. These apps are meant to run as stand-alone, local web apps/web pages. They will not send any information to the internet, and will allow you to create things such as sign-in sheets with student's names without the information being shared externally. 
