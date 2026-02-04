@@ -139,11 +139,17 @@ st.markdown("Tools to automate your syllabus, schedules, and calendar dates.")
 st.info("Note: These faculty tools are a work-in-progress. Double-check all output for accuracy.")
 
 # --- SIDEBAR NAVIGATION ---
+if 'nav_to' in st.session_state:
+    default_index = ["Home", "Syllabus Schedule", "Date Shifter & Calculator"].index(st.session_state.nav_to)
+    del st.session_state.nav_to
+else:
+    default_index = 0
+
 tool_choice = st.sidebar.radio("Select Tool:", [
     "Home",
     "Syllabus Schedule",
     "Date Shifter & Calculator"
-])
+], index=default_index)
 
 # ==========================================
 # HOME PAGE
@@ -160,6 +166,9 @@ if tool_choice == "Home":
             <p>Generate formatted HTML schedules from Canvas calendar (.ics) files for your syllabus.</p>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("Open Syllabus Schedule", key="nav_syllabus", use_container_width=True):
+            st.session_state.nav_to = "Syllabus Schedule"
+            st.rerun()
 
     with col2:
         st.markdown("""
@@ -168,6 +177,9 @@ if tool_choice == "Home":
             <p>Shift all dates in a calendar file forward or backward for reusing semester schedules.</p>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("Open Date Shifter", key="nav_date", use_container_width=True):
+            st.session_state.nav_to = "Date Shifter & Calculator"
+            st.rerun()
 
     # --- Standalone Tools Section ---
     st.markdown("### Standalone Tools")
