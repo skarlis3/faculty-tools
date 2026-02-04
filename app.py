@@ -49,18 +49,24 @@ st.markdown("""
         background-color: #0e7490;
     }
 
-    /* Tool cards for home page */
+    /* Tool card links for home page */
+    a.tool-card-link {
+        display: block;
+        text-decoration: none;
+        margin-bottom: 1rem;
+    }
     .tool-card {
         background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
         border: 1px solid #e2e8f0;
         border-radius: 0.75rem;
         padding: 1.5rem;
-        margin-bottom: 1rem;
         transition: all 0.2s ease;
+        cursor: pointer;
     }
     .tool-card:hover {
         border-color: #0891b2;
         box-shadow: 0 4px 12px rgba(8, 145, 178, 0.15);
+        transform: translateY(-2px);
     }
     @media (prefers-color-scheme: dark) {
         .tool-card {
@@ -90,41 +96,6 @@ st.markdown("""
     @media (prefers-color-scheme: dark) {
         .tool-card p {
             color: #94a3b8;
-        }
-    }
-    .tool-card a {
-        display: inline-block;
-        margin-top: 0.75rem;
-        color: #0891b2;
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.9rem;
-    }
-    .tool-card a:hover {
-        text-decoration: underline;
-    }
-    @media (prefers-color-scheme: dark) {
-        .tool-card a {
-            color: #22d3ee;
-        }
-    }
-    .tool-badge {
-        display: inline-block;
-        padding: 0.2rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-left: 0.5rem;
-    }
-    .badge-standalone {
-        background: #dbeafe;
-        color: #1d4ed8;
-    }
-    @media (prefers-color-scheme: dark) {
-        .badge-standalone {
-            background: #1e3a5f;
-            color: #60a5fa;
         }
     }
 </style>
@@ -219,20 +190,22 @@ if tool_choice == "Home":
 
     with col3:
         st.markdown("""
-        <div class="tool-card">
-            <h3>Door Sign Generator</h3>
-            <p>Create a visual weekly schedule for your office door from Self-Service data.</p>
-            <a href="door-sign.html" target="_blank">Open Door Sign Generator &rarr;</a>
-        </div>
+        <a href="door-sign.html" target="_blank" class="tool-card-link">
+            <div class="tool-card">
+                <h3>Door Sign Generator</h3>
+                <p>Create a visual weekly schedule for your office door from Self-Service data.</p>
+            </div>
+        </a>
         """, unsafe_allow_html=True)
 
     with col4:
         st.markdown("""
-        <div class="tool-card">
-            <h3>Assignment Sheet Helper</h3>
-            <p>Convert Self-Service schedule into Faculty Assignment Sheet (FAS) table format.</p>
-            <a href="assignment-sheet.html" target="_blank">Open Assignment Sheet Helper &rarr;</a>
-        </div>
+        <a href="assignment-sheet.html" target="_blank" class="tool-card-link">
+            <div class="tool-card">
+                <h3>Assignment Sheet Helper</h3>
+                <p>Convert Self-Service schedule into Faculty Assignment Sheet (FAS) table format.</p>
+            </div>
+        </a>
         """, unsafe_allow_html=True)
 
 # ==========================================
