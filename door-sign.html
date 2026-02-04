@@ -9,25 +9,33 @@
         :root {
             --bg-primary: #f8fafc;
             --bg-card: #ffffff;
+            --bg-input: #ffffff;
             --color-accent: #0891b2;
             --color-accent-hover: #0e7490;
             --color-text: #1e293b;
             --color-text-dim: #64748b;
             --border-color: #e2e8f0;
             --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --instruction-bg: #f0f9ff;
+            --success-bg: #ecfdf5;
+            --success-border: #a7f3d0;
+            --success-text: #065f46;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-primary: #0f172a;
-                --bg-card: #1e293b;
-                --color-accent: #22d3ee;
-                --color-accent-hover: #67e8f9;
-                --color-text: #e2e8f0;
-                --color-text-dim: #94a3b8;
-                --border-color: #334155;
-                --shadow: 0 1px 3px rgba(0,0,0,0.3);
-            }
+        [data-theme="dark"] {
+            --bg-primary: #0a0f1a;
+            --bg-card: #111827;
+            --bg-input: #1f2937;
+            --color-accent: #22d3ee;
+            --color-accent-hover: #67e8f9;
+            --color-text: #f1f5f9;
+            --color-text-dim: #94a3b8;
+            --border-color: #374151;
+            --shadow: 0 1px 3px rgba(0,0,0,0.4);
+            --instruction-bg: #0c1929;
+            --success-bg: #022c22;
+            --success-border: #047857;
+            --success-text: #a7f3d0;
         }
 
         * {
@@ -42,6 +50,7 @@
             color: var(--color-text);
             line-height: 1.6;
             padding: 2rem;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .container {
@@ -49,10 +58,40 @@
             margin: 0 auto;
         }
 
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
         h1 {
             font-size: 1.8rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
+        }
+
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 2rem;
+            padding: 0.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .theme-toggle span {
+            padding: 0.35rem 0.6rem;
+            border-radius: 1.5rem;
+            font-size: 0.85rem;
+            transition: background-color 0.2s;
+        }
+
+        .theme-toggle span.active {
+            background: var(--color-accent);
+            color: white;
         }
 
         .subtitle {
@@ -67,35 +106,30 @@
             padding: 1.5rem;
             margin-bottom: 1.5rem;
             box-shadow: var(--shadow);
+            transition: background-color 0.3s, border-color 0.3s;
         }
 
         .instruction-box {
-            background-color: #f0f9ff;
+            background-color: var(--instruction-bg);
             border-left: 4px solid var(--color-accent);
-            padding: 1rem 1.25rem;
+            padding: 0.75rem 1rem;
             border-radius: 0 0.5rem 0.5rem 0;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             font-size: 0.9rem;
+            transition: background-color 0.3s;
         }
 
-        @media (prefers-color-scheme: dark) {
-            .instruction-box {
-                background-color: #164e63;
-            }
-        }
-
-        .instruction-box strong {
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-
-        .instruction-box ul, .instruction-box ol {
-            margin-left: 1.25rem;
-            margin-top: 0.5rem;
+        .instruction-box ul {
+            margin: 0;
+            padding-left: 1.25rem;
         }
 
         .instruction-box li {
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.15rem;
+        }
+
+        .instruction-box li:last-child {
+            margin-bottom: 0;
         }
 
         .form-group {
@@ -125,6 +159,7 @@
             font-size: 0.75rem;
             cursor: pointer;
             color: var(--color-text-dim);
+            transition: background-color 0.2s, border-color 0.3s;
         }
 
         .help-btn:hover {
@@ -139,6 +174,7 @@
             padding: 0.75rem;
             border-radius: 0.25rem;
             margin-bottom: 0.5rem;
+            transition: background-color 0.3s;
         }
 
         .help-text.show {
@@ -152,9 +188,10 @@
             border-radius: 0.375rem;
             font-family: inherit;
             font-size: 0.95rem;
-            background: var(--bg-card);
+            background: var(--bg-input);
             color: var(--color-text);
             resize: vertical;
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
         }
 
         textarea:focus, input:focus {
@@ -226,20 +263,13 @@
         }
 
         .success-msg {
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            color: #065f46;
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--success-text);
             padding: 0.75rem 1rem;
             border-radius: 0.375rem;
             margin-bottom: 1rem;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .success-msg {
-                background: #064e3b;
-                border-color: #047857;
-                color: #a7f3d0;
-            }
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
         }
 
         .collapsible-header {
@@ -271,29 +301,26 @@
 <body>
 
 <div class="container">
-    <h1>Door Sign Generator</h1>
+    <div class="header-row">
+        <h1>Door Sign Generator</h1>
+        <div class="theme-toggle" onclick="toggleTheme()">
+            <span id="theme-light">Light</span>
+            <span id="theme-dark">Dark</span>
+        </div>
+    </div>
     <p class="subtitle">Generate a visual weekly schedule for your office door</p>
 
     <div class="card">
-        <div class="collapsible-header" onclick="toggleInstructions()">
+        <div class="collapsible-header collapsed" onclick="toggleInstructions()">
             <strong>How to Use This Tool</strong>
         </div>
-        <div id="instructions" class="collapsible-content">
+        <div id="instructions" class="collapsible-content hidden">
             <div class="instruction-box">
-                <strong>About This Tool</strong>
                 <ul>
-                    <li>Sections starting with <strong>O</strong> are listed at the bottom as online classes</li>
-                    <li>Sections starting with <strong>H</strong> or <strong>S</strong> appear on the grid</li>
-                    <li>Overlapping sections at the same time will be automatically merged</li>
+                    <li>Sections starting with S, C, or H appear on the timetable</li>
+                    <li>Sections starting with O are listed as online classes</li>
+                    <li>Overlapping sections are automatically merged</li>
                 </ul>
-
-                <strong style="margin-top: 1rem;">Steps:</strong>
-                <ol>
-                    <li>Paste your class schedule from Self-Service</li>
-                    <li>Enter your office hours</li>
-                    <li>Add a page title (e.g., "Winter 2026 Schedule")</li>
-                    <li>Click Generate and download the HTML file</li>
-                </ol>
             </div>
         </div>
     </div>
@@ -314,14 +341,8 @@ M/W 12:00 PM - 1:55 PM"></textarea>
             </div>
             <div id="oh-help" class="help-text">
                 <strong>Supported formats:</strong><br>
-                • M-Th 11-1, Fri 9-10<br>
-                • Mon/Wed 10-12<br>
-                • Virtual Tue 5-6<br>
-                • Monday: 11 AM-12 PM, 2-3 PM; 5-6 PM (virtual)<br><br>
-                <strong>Tips:</strong><br>
-                • Use commas or semicolons to separate time slots<br>
-                • Add "virtual" anywhere to mark virtual hours<br>
-                • Full day names or abbreviations both work
+                M-Th 11-1, Fri 9-10 &bull; Mon/Wed 10-12 &bull; Virtual Tue 5-6<br><br>
+                <strong>Tips:</strong> Use commas/semicolons to separate slots. Add "virtual" to mark virtual hours.
             </div>
             <input type="text" id="oh-input" placeholder="M-Th 11-1, Fri 9-10">
         </div>
@@ -350,6 +371,33 @@ M/W 12:00 PM - 1:55 PM"></textarea>
 </div>
 
 <script>
+// === THEME MANAGEMENT ===
+function initTheme() {
+    const saved = localStorage.getItem('door-sign-theme');
+    if (saved) {
+        setTheme(saved);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setTheme('dark');
+    } else {
+        setTheme('light');
+    }
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('theme-light').classList.toggle('active', theme === 'light');
+    document.getElementById('theme-dark').classList.toggle('active', theme === 'dark');
+    localStorage.setItem('door-sign-theme', theme);
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// Initialize theme on load
+initTheme();
+
 // === CONSTANTS ===
 const MONTHS = ["", "January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"];
