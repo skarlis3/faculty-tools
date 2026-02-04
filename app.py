@@ -23,7 +23,7 @@ st.markdown("""
     .instruction-box strong {
         color: #0f172a;
     }
-    
+
     /* Dark mode styles */
     @media (prefers-color-scheme: dark) {
         .instruction-box {
@@ -35,18 +35,97 @@ st.markdown("""
             color: #f1f5f9;
         }
     }
-    
+
     .stButton button {
         border-radius: 0.5rem;
         font-weight: 500;
     }
-    
+
     div[data-testid="stButton"] button[kind="primary"] {
         background-color: #0891b2;
         color: white;
     }
     div[data-testid="stButton"] button[kind="primary"]:hover {
         background-color: #0e7490;
+    }
+
+    /* Tool cards for home page */
+    .tool-card {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+    }
+    .tool-card:hover {
+        border-color: #0891b2;
+        box-shadow: 0 4px 12px rgba(8, 145, 178, 0.15);
+    }
+    @media (prefers-color-scheme: dark) {
+        .tool-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-color: #334155;
+        }
+        .tool-card:hover {
+            border-color: #22d3ee;
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.15);
+        }
+    }
+    .tool-card h3 {
+        margin: 0 0 0.5rem 0;
+        color: #0f172a;
+        font-size: 1.1rem;
+    }
+    @media (prefers-color-scheme: dark) {
+        .tool-card h3 {
+            color: #f1f5f9;
+        }
+    }
+    .tool-card p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+    @media (prefers-color-scheme: dark) {
+        .tool-card p {
+            color: #94a3b8;
+        }
+    }
+    .tool-card a {
+        display: inline-block;
+        margin-top: 0.75rem;
+        color: #0891b2;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    .tool-card a:hover {
+        text-decoration: underline;
+    }
+    @media (prefers-color-scheme: dark) {
+        .tool-card a {
+            color: #22d3ee;
+        }
+    }
+    .tool-badge {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-left: 0.5rem;
+    }
+    .badge-standalone {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+    @media (prefers-color-scheme: dark) {
+        .badge-standalone {
+            background: #1e3a5f;
+            color: #60a5fa;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -84,20 +163,74 @@ def extract_course_codes(events):
 # --- MAIN APP ---
 
 st.title("Faculty Tools")
-st.markdown("Tools to automate your syllabus and calendar dates.")
+st.markdown("Tools to automate your syllabus, schedules, and calendar dates.")
 
 st.info("Note: These faculty tools are a work-in-progress. Double-check all output for accuracy.")
 
 # --- SIDEBAR NAVIGATION ---
+# Handle navigation from home page buttons
+if 'nav_to' in st.session_state:
+    default_index = ["Home", "Syllabus Schedule", "Date Shifter & Calculator"].index(st.session_state.nav_to)
+    del st.session_state.nav_to
+else:
+    default_index = 0
+
 tool_choice = st.sidebar.radio("Select Tool:", [
+    "Home",
     "Syllabus Schedule",
     "Date Shifter & Calculator"
-])
+], index=default_index)
+
+# ==========================================
+# HOME PAGE
+# ==========================================
+if tool_choice == "Home":
+    st.markdown("### All Tools")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+        <div class="tool-card">
+            <h3>Syllabus Schedule Generator</h3>
+            <p>Generate formatted HTML schedules from Canvas calendar (.ics) files for your syllabus.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Open Syllabus Schedule", key="nav_syllabus"):
+            st.session_state.nav_to = "Syllabus Schedule"
+            st.rerun()
+
+        st.markdown("""
+        <div class="tool-card">
+            <h3>Date Shifter & Calculator</h3>
+            <p>Shift all dates in a calendar file forward or backward for reusing semester schedules.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Open Date Shifter", key="nav_date"):
+            st.session_state.nav_to = "Date Shifter & Calculator"
+            st.rerun()
+
+    with col2:
+        st.markdown("""
+        <div class="tool-card">
+            <h3>Door Sign Generator <span class="tool-badge badge-standalone">Standalone</span></h3>
+            <p>Create a visual weekly schedule for your office door from Self-Service data.</p>
+            <a href="door-sign.html" target="_blank">Open Door Sign Generator &rarr;</a>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="tool-card">
+            <h3>Assignment Sheet Helper <span class="tool-badge badge-standalone">Standalone</span></h3>
+            <p>Convert Self-Service schedule into Faculty Assignment Sheet (FAS) table format.</p>
+            <a href="assignment-sheet.html" target="_blank">Open Assignment Sheet Helper &rarr;</a>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ==========================================
 # TOOL 1: SYLLABUS SCHEDULE
 # ==========================================
-if tool_choice == "Syllabus Schedule":
+elif tool_choice == "Syllabus Schedule":
     st.header("Syllabus Schedule Generator")
     
     with st.expander("How to Use This Tool", expanded=True):
