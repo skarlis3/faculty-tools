@@ -185,8 +185,8 @@ tool_choice = st.sidebar.radio("Select Tool:", [
 # HOME PAGE
 # ==========================================
 if tool_choice == "Home":
-    st.markdown("### All Tools")
-
+    # --- Local Tools Section ---
+    st.markdown("### Tools")
     col1, col2 = st.columns(2)
 
     with col1:
@@ -200,6 +200,7 @@ if tool_choice == "Home":
             st.session_state.nav_to = "Syllabus Schedule"
             st.rerun()
 
+    with col2:
         st.markdown("""
         <div class="tool-card">
             <h3>Date Shifter & Calculator</h3>
@@ -210,18 +211,25 @@ if tool_choice == "Home":
             st.session_state.nav_to = "Date Shifter & Calculator"
             st.rerun()
 
-    with col2:
+    # --- Standalone Tools Section ---
+    st.markdown("### Standalone Tools")
+    st.caption("These tools run entirely in your browser - no server required.")
+
+    col3, col4 = st.columns(2)
+
+    with col3:
         st.markdown("""
         <div class="tool-card">
-            <h3>Door Sign Generator <span class="tool-badge badge-standalone">Standalone</span></h3>
+            <h3>Door Sign Generator</h3>
             <p>Create a visual weekly schedule for your office door from Self-Service data.</p>
             <a href="door-sign.html" target="_blank">Open Door Sign Generator &rarr;</a>
         </div>
         """, unsafe_allow_html=True)
 
+    with col4:
         st.markdown("""
         <div class="tool-card">
-            <h3>Assignment Sheet Helper <span class="tool-badge badge-standalone">Standalone</span></h3>
+            <h3>Assignment Sheet Helper</h3>
             <p>Convert Self-Service schedule into Faculty Assignment Sheet (FAS) table format.</p>
             <a href="assignment-sheet.html" target="_blank">Open Assignment Sheet Helper &rarr;</a>
         </div>
