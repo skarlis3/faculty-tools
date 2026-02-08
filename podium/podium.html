@@ -512,21 +512,21 @@
 <script>
 // === CONFIGURATION ===
 const CLASS_CALENDARS = {
-    "ENGL 1170 (Mondays)": "https://calendar.google.com/calendar/ical/96bccc53c2e45d1bd36c7075b4c7421cfcfe6789f9f451e926f18e598c42e1a4%40group.calendar.google.com/public/basic.ics",
-    "ENGL 1170 (Tuesdays)": "https://calendar.google.com/calendar/ical/f3df4847b18f876bda1420bdce9d5710558f73557203b228f5775fb4768ccad6%40group.calendar.google.com/public/basic.ics",
-    "ENGL 1181 (Mon/Wed)": "https://calendar.google.com/calendar/ical/0157024f1bbf32b1bda8275d5fff0a01e688d60921bb75e13b0d994d429a20fe%40group.calendar.google.com/public/basic.ics",
-    "ENGL 1181 (Tues/Thurs)": "https://calendar.google.com/calendar/ical/1ba2d62ad576db0224203216cfccbd583108a8ed3ddd170ca4c1aee9067d8fac%40group.calendar.google.com/public/basic.ics",
-    "ENGL 1181 (Tuesdays—Hybrid)": "https://calendar.google.com/calendar/ical/80c43857f8868cc0830f775213c16804819b2663a63a4785b5a91ae183fda585%40group.calendar.google.com/public/basic.ics",
-    "ENGL 1190 (Mon/Wed)": "https://calendar.google.com/calendar/ical/5ccac57e3b214413edfd731d32b4be4514c614f17bc034f363e61107d16c75f6%40group.calendar.google.com/public/basic.ics",
-    "ENGL 1190 (Tues/Thurs)": "https://calendar.google.com/calendar/ical/39ba7ac909903e1b6b3698153819e6a813638bb279c7c14295dec343b7b9464e%40group.calendar.google.com/public/basic.ics"
+    "ENGL 1170 (Mondays)": "96bccc53c2e45d1bd36c7075b4c7421cfcfe6789f9f451e926f18e598c42e1a4@group.calendar.google.com",
+    "ENGL 1170 (Tuesdays)": "f3df4847b18f876bda1420bdce9d5710558f73557203b228f5775fb4768ccad6@group.calendar.google.com",
+    "ENGL 1181 (Mon/Wed)": "0157024f1bbf32b1bda8275d5fff0a01e688d60921bb75e13b0d994d429a20fe@group.calendar.google.com",
+    "ENGL 1181 (Tues/Thurs)": "1ba2d62ad576db0224203216cfccbd583108a8ed3ddd170ca4c1aee9067d8fac@group.calendar.google.com",
+    "ENGL 1181 (Tuesdays—Hybrid)": "80c43857f8868cc0830f775213c16804819b2663a63a4785b5a91ae183fda585@group.calendar.google.com",
+    "ENGL 1190 (Mon/Wed)": "5ccac57e3b214413edfd731d32b4be4514c614f17bc034f363e61107d16c75f6@group.calendar.google.com",
+    "ENGL 1190 (Tues/Thurs)": "39ba7ac909903e1b6b3698153819e6a813638bb279c7c14295dec343b7b9464e@group.calendar.google.com"
 };
 
 const DEFAULT_TFW_PROMPT = "Write about whatever is in your head right now—stress, lunch plans, traffic, or your to-do list.";
 const DEFAULT_TFW_MINUTES = 7;
 const DEFAULT_AGENDA = "Freewrite\nTopic\nTopic";
 
-// CORS proxy for fetching calendar data
-const CORS_PROXY = "https://corsproxy.io/?";
+// Google Calendar API key (read-only, public calendars only)
+const GCAL_API_KEY = "AIzaSyBeqjMJKmYHtgTvhvIoSVpYYibmjwRPVZU";
 
 // === STATE ===
 let state = {
@@ -632,18 +632,46 @@ async function fetchCalendarEvents() {
     const upcomingDiv = document.getElementById('upcoming-display');
     upcomingDiv.innerHTML = '<div class="no-events">Loading events...</div>';
 
-    const calUrl = CLASS_CALENDARS[state.selectedClass];
-    if (!calUrl) {
+    const calendarId = CLASS_CALENDARS[state.selectedClass];
+    if (!calendarId) {
         upcomingDiv.innerHTML = '<div class="no-events">No calendar configured.</div>';
         return;
     }
 
     try {
-        const response = await fetch(CORS_PROXY + encodeURIComponent(calUrl));
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const maxDate = new Date(now);
+        maxDate.setDate(maxDate.getDate() + 7);
+
+        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`
+            + `?key=${GCAL_API_KEY}`
+            + `&timeMin=${now.toISOString()}`
+            + `&timeMax=${maxDate.toISOString()}`
+            + `&singleEvents=true`
+            + `&orderBy=startTime`;
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch calendar');
 
-        const icsText = await response.text();
-        const events = parseICS(icsText);
+        const data = await response.json();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const events = (data.items || []).map(item => {
+            const dateStr = item.start.date || item.start.dateTime;
+            const eventDate = new Date(dateStr);
+            eventDate.setHours(0, 0, 0, 0);
+
+            let dayLabel;
+            if (eventDate.getTime() === today.getTime()) {
+                dayLabel = 'Today';
+            } else {
+                dayLabel = eventDate.toLocaleDateString('en-US', { weekday: 'short' });
+            }
+
+            return { name: item.summary, date: eventDate, dayLabel };
+        });
 
         if (events.length === 0) {
             upcomingDiv.innerHTML = '<div class="no-events">No upcoming deadlines found.</div>';
@@ -656,61 +684,6 @@ async function fetchCalendarEvents() {
         console.error('Calendar fetch error:', error);
         upcomingDiv.innerHTML = '<div class="no-events">Could not fetch calendar.</div>';
     }
-}
-
-function parseICS(icsText) {
-    const events = [];
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const maxDate = new Date(now);
-    maxDate.setDate(maxDate.getDate() + 7);
-
-    // Split into VEVENT blocks
-    const eventBlocks = icsText.split('BEGIN:VEVENT');
-
-    for (let i = 1; i < eventBlocks.length; i++) {
-        const block = eventBlocks[i];
-        const endIdx = block.indexOf('END:VEVENT');
-        const eventData = block.substring(0, endIdx);
-
-        // Extract SUMMARY (event name)
-        const summaryMatch = eventData.match(/SUMMARY:(.+?)(?:\r?\n)/);
-        if (!summaryMatch) continue;
-        // Unescape ICS special characters (\, \; \\)
-        const name = summaryMatch[1].trim()
-            .replace(/\\,/g, ',')
-            .replace(/\\;/g, ';')
-            .replace(/\\\\/g, '\\');
-
-        // Extract DTSTART
-        const dateMatch = eventData.match(/DTSTART[^:]*:(\d{8})/);
-        if (!dateMatch) continue;
-
-        const dateStr = dateMatch[1];
-        const year = parseInt(dateStr.substring(0, 4));
-        const month = parseInt(dateStr.substring(4, 6)) - 1;
-        const day = parseInt(dateStr.substring(6, 8));
-        const eventDate = new Date(year, month, day);
-
-        // Check if within range
-        if (eventDate >= now && eventDate <= maxDate) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            let dayLabel;
-            if (eventDate.getTime() === today.getTime()) {
-                dayLabel = 'Today';
-            } else {
-                dayLabel = eventDate.toLocaleDateString('en-US', { weekday: 'short' });
-            }
-
-            events.push({ name, date: eventDate, dayLabel });
-        }
-    }
-
-    // Sort by date
-    events.sort((a, b) => a.date - b.date);
-    return events;
 }
 
 // === FOCUS MODE ===
