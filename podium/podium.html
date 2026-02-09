@@ -52,7 +52,7 @@
         }
 
         .card-header {
-            font-size: 1.1rem;
+            font-size: 1.4rem;
             color: var(--color-accent);
             margin-bottom: 15px;
             text-transform: uppercase;
@@ -62,7 +62,7 @@
         }
 
         .card-list {
-            font-size: 1.1rem;
+            font-size: 1.4rem;
             line-height: 1.6;
             color: var(--color-text);
             list-style-position: inside;
@@ -201,7 +201,7 @@
             padding: 20px;
             margin-top: 10px;
             border-radius: 0 8px 8px 0;
-            font-size: 1.1rem;
+            font-size: 1.4rem;
         }
 
         .tfw-notice strong {
@@ -218,6 +218,7 @@
         .no-events {
             color: #94a3b8;
             font-style: italic;
+            font-size: 1.4rem;
         }
 
         .welcome-left {
@@ -659,9 +660,16 @@ async function fetchCalendarEvents() {
         today.setHours(0, 0, 0, 0);
 
         const events = (data.items || []).map(item => {
-            const dateStr = item.start.date || item.start.dateTime;
-            const eventDate = new Date(dateStr);
-            eventDate.setHours(0, 0, 0, 0);
+            let eventDate;
+            if (item.start.date) {
+                // All-day event: "YYYY-MM-DD" — parse as local date, not UTC
+                const [y, m, d] = item.start.date.split('-').map(Number);
+                eventDate = new Date(y, m - 1, d);
+            } else {
+                // Timed event: full ISO string with offset — strip to date parts
+                const [y, m, d] = item.start.dateTime.slice(0, 10).split('-').map(Number);
+                eventDate = new Date(y, m - 1, d);
+            }
 
             let dayLabel;
             if (eventDate.getTime() === today.getTime()) {
