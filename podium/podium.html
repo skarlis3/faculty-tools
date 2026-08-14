@@ -163,6 +163,51 @@
             cursor: pointer;
         }
 
+        /* Saved prompts + sign-in */
+        .btn-compact {
+            width: auto;
+            padding: 9px 16px;
+            font-size: 0.85em;
+            color: var(--color-accent);
+            border-color: rgba(56, 189, 248, 0.45);
+        }
+
+        .prompt-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-top: 0.75rem;
+        }
+
+        .prompt-status {
+            font-size: 0.9rem;
+            color: var(--color-text-dim);
+        }
+
+        .prompt-status.error {
+            color: #fca5a5;
+        }
+
+        .signin-panel {
+            border: 1px solid var(--border-glass);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .signin-panel label {
+            margin-top: 0.75rem;
+        }
+
+        .signin-panel label:first-child {
+            margin-top: 0;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
         /* Layout */
         .two-col {
             display: grid;
@@ -444,8 +489,30 @@
                 </div>
                 <div id="tfw-options">
                     <div class="form-group">
+                        <label for="saved-prompts">Saved Prompts</label>
+                        <select id="saved-prompts">
+                            <option value="">&mdash; Loading&hellip; &mdash;</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="tfw-prompt">Writing Prompt</label>
                         <textarea id="tfw-prompt"></textarea>
+                        <div class="prompt-actions">
+                            <button type="button" class="btn btn-compact" id="save-prompt-btn">Save Prompt</button>
+                            <button type="button" class="btn btn-compact" id="delete-prompt-btn">Delete Selected</button>
+                            <button type="button" class="btn btn-compact" id="signout-btn" hidden>Sign Out</button>
+                            <span class="prompt-status" id="prompt-status" role="status" aria-live="polite"></span>
+                        </div>
+                        <div class="signin-panel" id="signin-panel" hidden>
+                            <label for="signin-email">Email</label>
+                            <input type="email" id="signin-email" autocomplete="username">
+                            <label for="signin-password">Password</label>
+                            <input type="password" id="signin-password" autocomplete="current-password">
+                            <div class="prompt-actions">
+                                <button type="button" class="btn btn-compact" id="signin-btn">Sign In</button>
+                                <button type="button" class="btn btn-compact" id="signin-cancel-btn">Cancel</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="tfw-minutes">Duration (minutes)</label>
@@ -800,6 +867,205 @@ function playGentleChime() {
         console.log("Web Audio not supported:", e);
     }
 }
+</script>
+
+<!-- Saved freewrite prompts: Firebase Auth (email/password) + Firestore.
+     Reading is open; writing is restricted to one account by the security
+     rules in firestore.rules. If this block fails to load, the rest of the
+     podium still works and the prompt box is simply typed into by hand. -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import {
+    getFirestore, collection, addDoc, deleteDoc, doc, getDocs,
+    query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCzFJgf5MiMd8ebad9cZxrzVMrbT9Uu378",
+    authDomain: "skarlis-class.firebaseapp.com",
+    projectId: "skarlis-class",
+    storageBucket: "skarlis-class.firebasestorage.app",
+    messagingSenderId: "763422997152",
+    appId: "1:763422997152:web:f66a1d1382c6979ba8a7c5"
+};
+
+const PROMPTS = "podiumPrompts";
+const MAX_PROMPT_LENGTH = 2000;
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = (id) => document.getElementById(id);
+let prompts = [];
+let pendingAction = null;   // 'save' or 'delete', resumed after a sign-in
+
+function setStatus(message, isError) {
+    const el = $('prompt-status');
+    el.textContent = message || '';
+    el.classList.toggle('error', Boolean(isError));
+}
+
+function renderPrompts() {
+    const select = $('saved-prompts');
+    const keep = select.value;
+    select.innerHTML = '';
+    const first = document.createElement('option');
+    first.value = '';
+    first.textContent = prompts.length
+        ? '— Choose a saved prompt —'
+        : '— No saved prompts yet —';
+    select.appendChild(first);
+    prompts.forEach((p) => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = p.text.length > 90 ? p.text.slice(0, 90) + '…' : p.text;
+        select.appendChild(option);
+    });
+    if (prompts.some((p) => p.id === keep)) select.value = keep;
+}
+
+async function loadPrompts() {
+    try {
+        const snap = await getDocs(query(collection(db, PROMPTS), orderBy('createdAt', 'desc')));
+        prompts = snap.docs.map((d) => ({ id: d.id, text: (d.data().text || '').trim() }));
+        renderPrompts();
+    } catch (err) {
+        $('saved-prompts').innerHTML = '<option value="">— Saved prompts unavailable —</option>';
+        setStatus('Saved prompts could not load. You can still type a prompt.', true);
+    }
+}
+
+function showSignIn(message) {
+    $('signin-panel').hidden = false;
+    setStatus(message || 'Sign in to make changes.');
+    $('signin-email').focus();
+}
+
+function hideSignIn() {
+    $('signin-panel').hidden = true;
+    $('signin-password').value = '';
+}
+
+function signInMessage(code) {
+    switch (code) {
+        case 'auth/invalid-email':          return 'That email address is not formatted correctly.';
+        case 'auth/invalid-credential':
+        case 'auth/wrong-password':
+        case 'auth/user-not-found':         return 'Email or password is incorrect.';
+        case 'auth/too-many-requests':      return 'Too many attempts. Wait a minute and try again.';
+        case 'auth/network-request-failed': return 'No connection to the network.';
+        case 'auth/unauthorized-domain':    return 'This address is not on the authorized domains list in Firebase.';
+        default:                            return 'Sign-in failed. Please try again.';
+    }
+}
+
+async function savePrompt() {
+    const text = $('tfw-prompt').value.trim();
+    if (!text) {
+        setStatus('Type a prompt before saving it.', true);
+        return;
+    }
+    if (text.length > MAX_PROMPT_LENGTH) {
+        setStatus('That prompt is too long to save.', true);
+        return;
+    }
+    if (prompts.some((p) => p.text === text)) {
+        setStatus('That prompt is already saved.');
+        return;
+    }
+    if (!auth.currentUser) {
+        pendingAction = 'save';
+        showSignIn('Sign in to save this prompt. What you typed will be kept.');
+        return;
+    }
+    setStatus('Saving…');
+    try {
+        await addDoc(collection(db, PROMPTS), { text, createdAt: serverTimestamp() });
+        await loadPrompts();
+        setStatus('Saved.');
+    } catch (err) {
+        setStatus('Could not save that prompt.', true);
+    }
+}
+
+async function deletePrompt() {
+    const id = $('saved-prompts').value;
+    if (!id) {
+        setStatus('Choose a saved prompt to delete.', true);
+        return;
+    }
+    if (!auth.currentUser) {
+        pendingAction = 'delete';
+        showSignIn('Sign in to delete this prompt.');
+        return;
+    }
+    const target = prompts.find((p) => p.id === id);
+    if (!window.confirm('Delete this saved prompt?\n\n' + (target ? target.text : ''))) return;
+    setStatus('Deleting…');
+    try {
+        await deleteDoc(doc(db, PROMPTS, id));
+        await loadPrompts();
+        setStatus('Deleted.');
+    } catch (err) {
+        setStatus('Could not delete that prompt.', true);
+    }
+}
+
+$('saved-prompts').addEventListener('change', (e) => {
+    const chosen = prompts.find((p) => p.id === e.target.value);
+    if (chosen) {
+        $('tfw-prompt').value = chosen.text;
+        setStatus('');
+    }
+});
+
+$('save-prompt-btn').addEventListener('click', savePrompt);
+$('delete-prompt-btn').addEventListener('click', deletePrompt);
+$('signin-cancel-btn').addEventListener('click', () => {
+    pendingAction = null;
+    hideSignIn();
+    setStatus('');
+});
+$('signout-btn').addEventListener('click', async () => {
+    await signOut(auth);
+    setStatus('Signed out.');
+});
+
+$('signin-btn').addEventListener('click', async () => {
+    const email = $('signin-email').value.trim();
+    const password = $('signin-password').value;
+    if (!email || !password) {
+        setStatus('Enter both an email and a password.', true);
+        return;
+    }
+    setStatus('Signing in…');
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+        setStatus(signInMessage(err && err.code), true);
+    }
+});
+
+$('signin-password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('signin-btn').click();
+});
+
+onAuthStateChanged(auth, (user) => {
+    $('signout-btn').hidden = !user;
+    if (!user) return;
+    hideSignIn();
+    const resume = pendingAction;
+    pendingAction = null;
+    if (resume === 'save') savePrompt();
+    else if (resume === 'delete') deletePrompt();
+    else setStatus('Signed in.');
+});
+
+loadPrompts();
 </script>
 
 </body>

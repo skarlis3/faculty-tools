@@ -1,0 +1,46 @@
+rules_version = '2';
+
+// Firestore security rules for the skarlis-class project.
+//
+// Paste this into Firebase console -> Firestore Database -> Rules -> Publish.
+// Keep this file in sync with what is published; the console is the live copy.
+//
+// podiumPrompts holds the saved freewrite prompts for podium/podium.html.
+// Anyone may read them, so the podium works without signing in. Only the one
+// account named below may write, so nothing on the projector can be changed
+// by someone who finds the page. Self-signup is disabled in the console, so
+// no second account can be created to get around this.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner() {
+      return request.auth != null
+        && request.auth.uid == 'kgHeqKOQicWudwHNp6YrWBBIXJn2';
+    }
+
+    match /podiumPrompts/{promptId} {
+      allow read: if true;
+
+      allow create: if isOwner()
+        && request.resource.data.keys().hasOnly(['text', 'createdAt'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000;
+
+      allow update: if isOwner()
+        && request.resource.data.keys().hasOnly(['text', 'createdAt'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000;
+
+      allow delete: if isOwner();
+    }
+
+    // Everything else in this project is closed until it has its own rule.
+    // Add a new match block per tool rather than loosening this one.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
