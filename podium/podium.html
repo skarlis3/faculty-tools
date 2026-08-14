@@ -180,6 +180,19 @@
             margin-top: 0.75rem;
         }
 
+        .select-compact {
+            width: auto;
+            padding: 9px 12px;
+            font-size: 0.85em;
+        }
+
+        .prompt-inline-label {
+            display: inline;
+            margin-bottom: 0;
+            font-size: 0.9rem;
+            color: var(--color-text-dim);
+        }
+
         .prompt-status {
             font-size: 0.9rem;
             color: var(--color-text-dim);
@@ -498,6 +511,8 @@
                         <label for="tfw-prompt">Writing Prompt</label>
                         <textarea id="tfw-prompt"></textarea>
                         <div class="prompt-actions">
+                            <label for="prompt-course" class="prompt-inline-label">Save for</label>
+                            <select id="prompt-course" class="select-compact"></select>
                             <button type="button" class="btn btn-compact" id="save-prompt-btn">Save Prompt</button>
                             <button type="button" class="btn btn-compact" id="delete-prompt-btn">Delete Selected</button>
                             <button type="button" class="btn btn-compact" id="signout-btn" hidden>Sign Out</button>
@@ -895,6 +910,11 @@ const firebaseConfig = {
 const PROMPTS = "podiumPrompts";
 const MAX_PROMPT_LENGTH = 2000;
 
+// A prompt's course is the part of a class name before the bracket, so
+// "ENGL 1181 (Mon/Wed)" and "ENGL 1181 (Hybrid)" share their prompts.
+// An empty course means the prompt shows for every class.
+const courseOf = (className) => String(className || '').split('(')[0].trim();
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -909,29 +929,68 @@ function setStatus(message, isError) {
     el.classList.toggle('error', Boolean(isError));
 }
 
+function currentCourse() {
+    const classSelect = $('class-select');
+    return courseOf(classSelect ? classSelect.value : '');
+}
+
+// Prompts for the class currently selected, plus every prompt saved for all
+// classes. A prompt with no course recorded counts as all classes, so nothing
+// saved before courses existed disappears.
+function visiblePrompts() {
+    const course = currentCourse();
+    return prompts.filter((p) => !p.course || p.course === course);
+}
+
+function buildCourseSelect() {
+    const select = $('prompt-course');
+    const courses = [];
+    Object.keys(CLASS_CALENDARS).forEach((name) => {
+        const course = courseOf(name);
+        if (course && !courses.includes(course)) courses.push(course);
+    });
+    select.innerHTML = '';
+    const any = document.createElement('option');
+    any.value = '';
+    any.textContent = 'All classes';
+    select.appendChild(any);
+    courses.forEach((course) => {
+        const option = document.createElement('option');
+        option.value = course;
+        option.textContent = course;
+        select.appendChild(option);
+    });
+}
+
 function renderPrompts() {
     const select = $('saved-prompts');
     const keep = select.value;
+    const showing = visiblePrompts();
     select.innerHTML = '';
     const first = document.createElement('option');
     first.value = '';
-    first.textContent = prompts.length
+    first.textContent = showing.length
         ? '— Choose a saved prompt —'
-        : '— No saved prompts yet —';
+        : (prompts.length ? '— None saved for this class —' : '— No saved prompts yet —');
     select.appendChild(first);
-    prompts.forEach((p) => {
+    showing.forEach((p) => {
         const option = document.createElement('option');
         option.value = p.id;
-        option.textContent = p.text.length > 90 ? p.text.slice(0, 90) + '…' : p.text;
+        const label = p.text.length > 80 ? p.text.slice(0, 80) + '…' : p.text;
+        option.textContent = p.course ? `[${p.course}] ${label}` : label;
         select.appendChild(option);
     });
-    if (prompts.some((p) => p.id === keep)) select.value = keep;
+    if (showing.some((p) => p.id === keep)) select.value = keep;
 }
 
 async function loadPrompts() {
     try {
         const snap = await getDocs(query(collection(db, PROMPTS), orderBy('createdAt', 'desc')));
-        prompts = snap.docs.map((d) => ({ id: d.id, text: (d.data().text || '').trim() }));
+        prompts = snap.docs.map((d) => ({
+            id: d.id,
+            text: (d.data().text || '').trim(),
+            course: (d.data().course || '').trim()
+        }));
         renderPrompts();
     } catch (err) {
         $('saved-prompts').innerHTML = '<option value="">— Saved prompts unavailable —</option>';
@@ -973,8 +1032,9 @@ async function savePrompt() {
         setStatus('That prompt is too long to save.', true);
         return;
     }
-    if (prompts.some((p) => p.text === text)) {
-        setStatus('That prompt is already saved.');
+    const course = $('prompt-course').value;
+    if (prompts.some((p) => p.text === text && (p.course || '') === course)) {
+        setStatus('That prompt is already saved for ' + (course || 'all classes') + '.');
         return;
     }
     if (!auth.currentUser) {
@@ -984,9 +1044,9 @@ async function savePrompt() {
     }
     setStatus('Saving…');
     try {
-        await addDoc(collection(db, PROMPTS), { text, createdAt: serverTimestamp() });
+        await addDoc(collection(db, PROMPTS), { text, course, createdAt: serverTimestamp() });
         await loadPrompts();
-        setStatus('Saved.');
+        setStatus(course ? `Saved for ${course}.` : 'Saved for all classes.');
     } catch (err) {
         setStatus('Could not save that prompt.', true);
     }
@@ -1063,6 +1123,15 @@ onAuthStateChanged(auth, (user) => {
     if (resume === 'save') savePrompt();
     else if (resume === 'delete') deletePrompt();
     else setStatus('Signed in.');
+});
+
+// The class dropdown is filled by the main script on DOMContentLoaded, which
+// runs after this module. Build the course list and re-filter once it exists.
+document.addEventListener('DOMContentLoaded', () => {
+    buildCourseSelect();
+    renderPrompts();
+    const classSelect = $('class-select');
+    if (classSelect) classSelect.addEventListener('change', renderPrompts);
 });
 
 loadPrompts();
