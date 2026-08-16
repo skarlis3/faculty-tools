@@ -364,6 +364,17 @@
             width: 80%;
             line-height: 1.3;
             transition: color 0.5s ease;
+            /* Keep the line and paragraph breaks typed into the prompt box.
+               pre-line rather than pre-wrap, so stray double spaces and any
+               indentation from a paste do not survive. */
+            white-space: pre-line;
+        }
+
+        /* One step down for long prompts. Applied by word count when the
+           welcome screen is launched — see LONG_PROMPT_WORDS. */
+        .focus-prompt.long {
+            font-size: clamp(1.4em, 2.4vw, 2em);
+            line-height: 1.35;
         }
 
         .focus-grid {
@@ -606,6 +617,9 @@ const CLASS_CALENDARS = {
 
 const DEFAULT_TFW_PROMPT = "Write about whatever is in your head right now—stress, lunch plans, traffic, or your to-do list.";
 const DEFAULT_TFW_MINUTES = 7;
+
+// Above this many words the prompt on the writing screen drops one size step.
+const LONG_PROMPT_WORDS = 40;
 const DEFAULT_AGENDA = "Freewrite\nTopic\nTopic";
 
 // Google Calendar API key (read-only, public calendars only)
@@ -778,8 +792,13 @@ async function fetchCalendarEvents() {
 
 // === FOCUS MODE ===
 function startFocus() {
-    document.getElementById('focus-prompt-display').textContent = state.tfwPrompt;
-    document.getElementById('focus-prompt-display').classList.remove('complete');
+    const promptDisplay = document.getElementById('focus-prompt-display');
+    promptDisplay.textContent = state.tfwPrompt;
+    promptDisplay.classList.remove('complete');
+
+    // Long prompts drop one step in size so they still fit the screen.
+    const wordCount = state.tfwPrompt.trim().split(/\s+/).filter(Boolean).length;
+    promptDisplay.classList.toggle('long', wordCount > LONG_PROMPT_WORDS);
     document.getElementById('timer-card').classList.remove('complete');
     document.getElementById('progress-bar').style.width = '0%';
 
