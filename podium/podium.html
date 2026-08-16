@@ -1009,6 +1009,17 @@ function hideSignIn() {
     $('signin-password').value = '';
 }
 
+function writeMessage(action, err) {
+    const code = (err && err.code) || 'unknown';
+    if (code === 'permission-denied') {
+        return `Firestore refused the ${action}. The published security rules do not allow it — check that they list "course" as an allowed field.`;
+    }
+    if (code === 'unavailable' || code === 'failed-precondition') {
+        return `Could not reach Firestore to ${action}. Check the network and try again.`;
+    }
+    return `Could not ${action} that prompt (${code}).`;
+}
+
 function signInMessage(code) {
     switch (code) {
         case 'auth/invalid-email':          return 'That email address is not formatted correctly.';
@@ -1048,7 +1059,8 @@ async function savePrompt() {
         await loadPrompts();
         setStatus(course ? `Saved for ${course}.` : 'Saved for all classes.');
     } catch (err) {
-        setStatus('Could not save that prompt.', true);
+        console.error('Podium: saving a prompt failed.', err);
+        setStatus(writeMessage('save', err), true);
     }
 }
 
@@ -1071,7 +1083,8 @@ async function deletePrompt() {
         await loadPrompts();
         setStatus('Deleted.');
     } catch (err) {
-        setStatus('Could not delete that prompt.', true);
+        console.error('Podium: deleting a prompt failed.', err);
+        setStatus(writeMessage('delete', err), true);
     }
 }
 
