@@ -364,10 +364,6 @@
             width: 80%;
             line-height: 1.3;
             transition: color 0.5s ease;
-            /* Keep the line and paragraph breaks typed into the prompt box.
-               pre-line rather than pre-wrap, so stray double spaces and any
-               indentation from a paste do not survive. */
-            white-space: pre-line;
         }
 
         /* One step down for long prompts. Applied by word count when the
@@ -375,6 +371,14 @@
         .focus-prompt.long {
             font-size: clamp(1.4em, 2.4vw, 2em);
             line-height: 1.35;
+        }
+
+        /* Every line typed into the prompt box becomes its own paragraph.
+           The gap is deliberately less than a blank line, so one press of
+           Enter reads as a paragraph break from the back of the room
+           without eating the vertical space a full blank line would. */
+        .prompt-para + .prompt-para {
+            margin-top: 0.55em;
         }
 
         .focus-grid {
@@ -793,8 +797,20 @@ async function fetchCalendarEvents() {
 // === FOCUS MODE ===
 function startFocus() {
     const promptDisplay = document.getElementById('focus-prompt-display');
-    promptDisplay.textContent = state.tfwPrompt;
     promptDisplay.classList.remove('complete');
+
+    // Each line of the prompt becomes its own paragraph. Blank lines are
+    // dropped, so pressing Enter once and pressing it twice look the same.
+    promptDisplay.textContent = '';
+    state.tfwPrompt.split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .forEach((line) => {
+            const para = document.createElement('div');
+            para.className = 'prompt-para';
+            para.textContent = line;
+            promptDisplay.appendChild(para);
+        });
 
     // Long prompts drop one step in size so they still fit the screen.
     const wordCount = state.tfwPrompt.trim().split(/\s+/).filter(Boolean).length;
