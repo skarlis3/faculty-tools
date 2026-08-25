@@ -73,13 +73,6 @@
             margin-bottom: 8px;
         }
 
-        .card-list li.sub-bullet {
-            margin-left: 1.5em;
-            list-style-type: circle;
-            color: var(--color-text-dim);
-            font-size: 0.95em;
-        }
-
         /* Buttons */
         .btn {
             background: transparent;
@@ -508,10 +501,6 @@
                     <label for="class-select">Select Class</label>
                     <select id="class-select"></select>
                 </div>
-                <div class="form-group">
-                    <label for="agenda-input">Today's Agenda</label>
-                    <textarea id="agenda-input" placeholder="Enter each agenda item on a new line"></textarea>
-                </div>
             </div>
             <div>
                 <h3>Tech-Free Writing</h3>
@@ -576,10 +565,6 @@
             </div>
             <div>
                 <div class="glass-card">
-                    <div class="card-header">Today's Agenda</div>
-                    <ul class="card-list" id="agenda-display"></ul>
-                </div>
-                <div class="glass-card">
                     <div class="card-header">Upcoming</div>
                     <div id="upcoming-display"></div>
                 </div>
@@ -634,7 +619,6 @@ const DEFAULT_TFW_MINUTES = 7;
 
 // Above this many words the prompt on the writing screen drops one size step.
 const LONG_PROMPT_WORDS = 40;
-const DEFAULT_AGENDA = "Freewrite\nTopic\nTopic";
 
 // Google Calendar API key (read-only, public calendars only)
 const GCAL_API_KEY = "AIzaSyBeqjMJKmYHtgTvhvIoSVpYYibmjwRPVZU";
@@ -642,7 +626,6 @@ const GCAL_API_KEY = "AIzaSyBeqjMJKmYHtgTvhvIoSVpYYibmjwRPVZU";
 // === STATE ===
 let state = {
     selectedClass: Object.keys(CLASS_CALENDARS)[0],
-    agenda: DEFAULT_AGENDA,
     isTfw: true,
     tfwPrompt: DEFAULT_TFW_PROMPT,
     tfwMinutes: DEFAULT_TFW_MINUTES
@@ -662,7 +645,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Set default values
-    document.getElementById('agenda-input').value = DEFAULT_AGENDA;
     document.getElementById('tfw-prompt').value = DEFAULT_TFW_PROMPT;
     document.getElementById('tfw-minutes').value = DEFAULT_TFW_MINUTES;
 
@@ -682,7 +664,6 @@ function showScreen(screenName) {
 function launchWelcome() {
     // Save state from form
     state.selectedClass = document.getElementById('class-select').value;
-    state.agenda = document.getElementById('agenda-input').value;
     state.isTfw = document.getElementById('tfw-checkbox').checked;
     state.tfwPrompt = document.getElementById('tfw-prompt').value;
     state.tfwMinutes = parseInt(document.getElementById('tfw-minutes').value) || DEFAULT_TFW_MINUTES;
@@ -697,21 +678,6 @@ function updateWelcomeScreen() {
     const now = new Date();
     const options = { weekday: 'long', month: 'long', day: 'numeric' };
     document.getElementById('date-display').textContent = now.toLocaleDateString('en-US', options);
-
-    // Set agenda (supports sub-bullets with - prefix)
-    const agendaList = document.getElementById('agenda-display');
-    agendaList.innerHTML = '';
-    state.agenda.split('\n').filter(line => line.trim()).forEach(item => {
-        const trimmed = item.trim();
-        const li = document.createElement('li');
-        if (trimmed.startsWith('-')) {
-            li.textContent = trimmed.substring(1).trim();
-            li.classList.add('sub-bullet');
-        } else {
-            li.textContent = trimmed;
-        }
-        agendaList.appendChild(li);
-    });
 
     // TFW notice and buttons
     const tfwContainer = document.getElementById('tfw-notice-container');
