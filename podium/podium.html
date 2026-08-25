@@ -503,11 +503,11 @@
                 </div>
             </div>
             <div>
-                <h3>Tech-Free Writing</h3>
+                <h3 id="session-heading">Tech-Free Writing</h3>
                 <div class="form-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="tfw-checkbox" checked>
-                        <label for="tfw-checkbox" style="margin-bottom: 0;">Is today a TFW day?</label>
+                        <label for="tfw-checkbox" id="tfw-checkbox-label" style="margin-bottom: 0;">Is today a TFW day?</label>
                     </div>
                 </div>
                 <div id="tfw-options">
@@ -620,6 +620,33 @@ const DEFAULT_TFW_MINUTES = 7;
 // Above this many words the prompt on the writing screen drops one size step.
 const LONG_PROMPT_WORDS = 40;
 
+// A class name's course is the part before the bracket, so "ENGL 1181
+// (Mon/Wed)" and "ENGL 1181 (Tues/Thurs)" count as the same course.
+const courseOf = (className) => String(className || '').split('(')[0].trim();
+
+// What the writing session is called. Most classes call it Tech-Free Writing;
+// 1730 calls it a freewrite. A course listed below overrides only the lines it
+// names, and anything not listed uses all of DEFAULT_SESSION_COPY.
+const DEFAULT_SESSION_COPY = {
+    setupHeading: 'Tech-Free Writing',
+    checkbox: 'Is today a TFW day?',
+    noticeHeading: 'Tech-Free Writing Today',
+    noticeLine: 'Have your journal and pen ready.'
+};
+
+const COURSE_SESSION_COPY = {
+    'ENGL 1730': {
+        setupHeading: 'Freewrite',
+        checkbox: 'Is today a freewrite day?',
+        noticeHeading: '',
+        noticeLine: 'Reminder: have paper and a writing utensil ready for the freewrite at the start of class.'
+    }
+};
+
+function sessionCopy(className) {
+    return Object.assign({}, DEFAULT_SESSION_COPY, COURSE_SESSION_COPY[courseOf(className)] || {});
+}
+
 // Google Calendar API key (read-only, public calendars only)
 const GCAL_API_KEY = "AIzaSyBeqjMJKmYHtgTvhvIoSVpYYibmjwRPVZU";
 
@@ -652,7 +679,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('tfw-checkbox').addEventListener('change', (e) => {
         document.getElementById('tfw-options').style.display = e.target.checked ? 'block' : 'none';
     });
+
+    // The setup screen names the session the way the chosen class does.
+    applySetupCopy();
+    classSelect.addEventListener('change', applySetupCopy);
 });
+
+function applySetupCopy() {
+    const copy = sessionCopy(document.getElementById('class-select').value);
+    document.getElementById('session-heading').textContent = copy.setupHeading;
+    document.getElementById('tfw-checkbox-label').textContent = copy.checkbox;
+}
 
 // === SCREEN MANAGEMENT ===
 function showScreen(screenName) {
@@ -683,12 +720,17 @@ function updateWelcomeScreen() {
     const tfwContainer = document.getElementById('tfw-notice-container');
     const welcomeButtons = document.getElementById('welcome-buttons');
     if (state.isTfw) {
-        tfwContainer.innerHTML = `
-            <div class="tfw-notice">
-                <strong>Tech-Free Writing Today</strong>
-                Have your journal and pen ready.
-            </div>
-        `;
+        const copy = sessionCopy(state.selectedClass);
+        tfwContainer.innerHTML = '';
+        const notice = document.createElement('div');
+        notice.className = 'tfw-notice';
+        if (copy.noticeHeading) {
+            const heading = document.createElement('strong');
+            heading.textContent = copy.noticeHeading;
+            notice.appendChild(heading);
+        }
+        notice.appendChild(document.createTextNode(copy.noticeLine));
+        tfwContainer.appendChild(notice);
         welcomeButtons.innerHTML = `
             <button class="btn btn-bright" onclick="startFocus()">Start Writing Session</button>
             <button class="btn" onclick="showScreen('setup')">Edit Setup</button>
@@ -921,10 +963,9 @@ const firebaseConfig = {
 const PROMPTS = "podiumPrompts";
 const MAX_PROMPT_LENGTH = 2000;
 
-// A prompt's course is the part of a class name before the bracket, so
-// "ENGL 1181 (Mon/Wed)" and "ENGL 1181 (Hybrid)" share their prompts.
-// An empty course means the prompt shows for every class.
-const courseOf = (className) => String(className || '').split('(')[0].trim();
+// Prompts are filed by course, using courseOf from the main script above, so
+// "ENGL 1181 (Mon/Wed)" and "ENGL 1181 (Hybrid)" share their prompts. An empty
+// course means the prompt shows for every class.
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
