@@ -30,7 +30,28 @@
             color: var(--color-text);
             background-color: var(--bg-primary);
             background-image: radial-gradient(circle at 0% 0%, var(--bg-gradient-start) 0%, var(--bg-primary) 60%);
-            min-height: 100vh;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* The whole app is drawn once at a fixed 1920x1080 size, then this
+           one box is scaled up or down to fit whatever screen it's actually
+           shown on -- see fitStage() in the script. That's why nothing
+           inside uses screen-relative units (vw/vh) any more: resizing the
+           stage as a single image is what makes the podium fit different
+           projectors now, not each piece resizing itself separately.
+           1920x1080 was picked as the reference because it's the resolution
+           most laptops and classroom projectors already run at; if the
+           podium ever looks consistently off, this is the one place to
+           change it (and the plainer numbers that replaced the old vw/vh
+           values below would need recalculating for the new size). */
+        #stage {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            width: 1920px;
+            height: 1080px;
+            transform-origin: 0 0;
         }
 
         .container {
@@ -329,7 +350,7 @@
 
         /* Focus Mode Styles */
         #focus-screen {
-            min-height: 100vh;
+            height: 100%;
             display: none;
             flex-direction: column;
             align-items: center;
@@ -348,27 +369,25 @@
         }
 
         .focus-prompt {
-            font-size: clamp(1.8em, 3vw, 2.5em);
+            font-size: 2.5em;
             color: #ffffff;
             text-align: left;
-            margin-top: 8vh;
-            margin-bottom: 10vh;
+            margin-top: 86px;
+            margin-bottom: 108px;
             font-weight: 300;
             width: 80%;
             line-height: 1.3;
             transition: color 0.5s ease;
-            /* Cap the line length. Without this the measure grows with the
-               screen — on a wide display the prompt ran to about ninety
-               characters a line, which is where reading from the back of the
-               room falls apart. In em, so the measure stays the same number
-               of characters when a long prompt drops a size step. */
+            /* Cap the line length so it stays readable from the back of the
+               room. In em, so the measure stays the same number of
+               characters when a long prompt drops a size step. */
             max-width: 34em;
         }
 
         /* One step down for long prompts. Applied by word count when the
            welcome screen is launched — see LONG_PROMPT_WORDS. */
         .focus-prompt.long {
-            font-size: clamp(1.4em, 2.4vw, 2em);
+            font-size: 2em;
             line-height: 1.35;
         }
 
@@ -423,11 +442,11 @@
         }
 
         .focus-card .card-header {
-            font-size: clamp(1.2em, 2vw, 1.5em);
+            font-size: 1.5em;
         }
 
         .focus-card ul {
-            font-size: clamp(1.2em, 2vw, 1.4em);
+            font-size: 1.4em;
             font-weight: 300;
             color: #cde2f7;
             line-height: 1.8;
@@ -439,7 +458,7 @@
         }
 
         #timer-display {
-            font-size: clamp(1.4em, 2.1vw, 1.6em);
+            font-size: 1.6em;
             font-weight: 300;
             color: #cde2f7;
             text-align: center;
@@ -491,7 +510,7 @@
 
         .focus-card.complete #timer-display {
             color: #86efac;
-            font-size: clamp(2.2em, 4vw, 3em);
+            font-size: 3em;
             text-shadow: 0 0 30px rgba(134, 239, 172, 0.5);
         }
 
@@ -506,6 +525,8 @@
     </style>
 </head>
 <body>
+
+<div id="stage">
 
 <!-- SETUP SCREEN -->
 <div id="setup-screen" class="screen active">
@@ -614,7 +635,27 @@
     </div>
 </div>
 
+</div><!-- /#stage -->
+
 <script>
+// === STAGE SCALING ===
+// Everything is drawn once at a fixed 1920x1080 size (#stage in the CSS
+// and markup), then scaled up or down here to fit whatever screen it's
+// actually shown on -- like projecting a slide, rather than a normal
+// webpage that reflows itself. That's what keeps the laptop preview and
+// the classroom projector looking identical regardless of resolution.
+const STAGE_WIDTH = 1920;
+const STAGE_HEIGHT = 1080;
+
+function fitStage() {
+    const stage = document.getElementById('stage');
+    const scale = Math.min(window.innerWidth / STAGE_WIDTH, window.innerHeight / STAGE_HEIGHT);
+    stage.style.transform = `scale(${scale}) translate(-${STAGE_WIDTH / 2}px, -${STAGE_HEIGHT / 2}px)`;
+}
+
+fitStage();
+window.addEventListener('resize', fitStage);
+
 // === CONFIGURATION ===
 // Order here is the order of the dropdown, and the first entry is what the
 // setup screen starts on. 1181 leads because it is what this gets used for;
