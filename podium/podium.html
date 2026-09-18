@@ -376,8 +376,24 @@
            The gap is deliberately less than a blank line, so one press of
            Enter reads as a paragraph break from the back of the room
            without eating the vertical space a full blank line would. */
-        .prompt-para + .prompt-para {
+        .prompt-para + .prompt-para,
+        .prompt-para + .prompt-bullets,
+        .prompt-bullets + .prompt-para {
             margin-top: 1em;
+        }
+
+        /* A "- " line becomes a bullet at a smaller size than the rest of
+           the prompt. The size is relative (em), so it shrinks along with
+           .focus-prompt.long instead of needing its own size step. */
+        .prompt-bullets {
+            margin: 0;
+            padding-left: 1.1em;
+            font-size: 0.75em;
+            line-height: 1.5;
+        }
+
+        .prompt-bullets li + li {
+            margin-top: 0.35em;
         }
 
         .focus-grid {
@@ -819,20 +835,40 @@ function startFocus() {
 
     // Each line of the prompt becomes its own paragraph. Blank lines are
     // dropped, so pressing Enter once and pressing it twice look the same.
+    // A line starting with "- " becomes a bulleted, smaller-text line
+    // instead — consecutive bullet lines share one list.
     promptDisplay.textContent = '';
+    let bulletList = null;
+    let plainWords = 0;
     state.tfwPrompt.split('\n')
         .map((line) => line.trim())
         .filter(Boolean)
         .forEach((line) => {
-            const para = document.createElement('div');
-            para.className = 'prompt-para';
-            para.textContent = line;
-            promptDisplay.appendChild(para);
+            const bullet = line.match(/^-\s*(.+)$/);
+            if (bullet) {
+                if (!bulletList) {
+                    bulletList = document.createElement('ul');
+                    bulletList.className = 'prompt-bullets';
+                    promptDisplay.appendChild(bulletList);
+                }
+                const item = document.createElement('li');
+                item.textContent = bullet[1];
+                bulletList.appendChild(item);
+                plainWords += bullet[1].split(/\s+/).filter(Boolean).length;
+            } else {
+                bulletList = null;
+                const para = document.createElement('div');
+                para.className = 'prompt-para';
+                para.textContent = line;
+                promptDisplay.appendChild(para);
+                plainWords += line.split(/\s+/).filter(Boolean).length;
+            }
         });
 
     // Long prompts drop one step in size so they still fit the screen.
-    const wordCount = state.tfwPrompt.trim().split(/\s+/).filter(Boolean).length;
-    promptDisplay.classList.toggle('long', wordCount > LONG_PROMPT_WORDS);
+    // Word count is taken from the text actually shown, so bullet markers
+    // ("- ") don't count toward the length.
+    promptDisplay.classList.toggle('long', plainWords > LONG_PROMPT_WORDS);
     document.getElementById('timer-card').classList.remove('complete');
     document.getElementById('progress-bar').style.width = '0%';
 
