@@ -16,7 +16,7 @@ service cloud.firestore {
 
     function isOwner() {
       return request.auth != null
-        && request.auth.uid == 'kgHeqKOQicWudwHNp6YrWBBIXJn2';
+        && request.auth.uid == 'N2i1rhw1eFRer8Xc54hPYRzBYo22';
     }
 
     match /podiumPrompts/{promptId} {
